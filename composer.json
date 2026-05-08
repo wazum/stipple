@@ -1,0 +1,60 @@
+{
+    "name": "wazum/stipple",
+    "description": "Render small SVG icons to monochrome ANSI for terminal UIs (Laravel/Prompts, Symfony Console, plain CLI).",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "svg",
+        "ansi",
+        "terminal",
+        "tui",
+        "cli",
+        "icons",
+        "braille",
+        "half-block",
+        "render"
+    ],
+    "homepage": "https://github.com/wazum/stipple",
+    "support": {
+        "issues": "https://github.com/wazum/stipple/issues",
+        "source": "https://github.com/wazum/stipple"
+    },
+    "authors": [
+        {
+            "name": "Wolfgang Klinger",
+            "email": "wolfgang@wazum.com",
+            "homepage": "https://github.com/wazum"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-dom": "*",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "ext-simplexml": "*",
+        "meyfa/php-svg": "^0.16"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.50",
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^11"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wazum\\Stipple\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wazum\\Stipple\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
