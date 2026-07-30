@@ -7,6 +7,7 @@ namespace Wazum\Stipple\Sampler;
 final class BrailleSampler extends AbstractSampler
 {
     private const BRAILLE_BLOCK_START = 0x2800;
+    private const BLANK_CELL = "\u{2800}"; // BRAILLE_BLOCK_START with no dots set
     private const PIXELS_PER_CELL_X = 2;
     private const PIXELS_PER_CELL_Y = 4;
 
@@ -32,6 +33,11 @@ final class BrailleSampler extends AbstractSampler
     public function pixelsPerCellY(): int
     {
         return self::PIXELS_PER_CELL_Y;
+    }
+
+    public function blankCell(): string
+    {
+        return self::BLANK_CELL;
     }
 
     public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string

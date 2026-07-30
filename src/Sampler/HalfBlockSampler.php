@@ -24,6 +24,11 @@ final class HalfBlockSampler extends AbstractSampler
         return self::PIXELS_PER_CELL_Y;
     }
 
+    public function blankCell(): string
+    {
+        return self::CHAR_BLANK;
+    }
+
     public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string
     {
         $this->assertTrueColorImage($image);

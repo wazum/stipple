@@ -79,6 +79,12 @@ final class HalfBlockSamplerTest extends TestCase
     }
 
     #[Test]
+    public function blankCellIsASpace(): void
+    {
+        self::assertSame(' ', (new HalfBlockSampler())->blankCell());
+    }
+
+    #[Test]
     public function paletteImageIsRejected(): void
     {
         // imagecolorat() returns a palette index here, not packed ARGB, so sampling it

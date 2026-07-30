@@ -102,6 +102,53 @@ final class StippleTest extends TestCase
     }
 
     #[Test]
+    public function toIconExposesTheSameOutputAsToStringSplitIntoRows(): void
+    {
+        $instance = Stipple::make(self::SYNTHETIC_FIXTURE)->height(2)->sampler(new HalfBlockSampler());
+
+        $icon = $instance->toIcon();
+
+        self::assertSame(["\e[39m████\e[0m", "\e[39m████\e[0m"], $icon->rows);
+        self::assertSame($instance->toString(), (string) $icon);
+    }
+
+    #[Test]
+    public function toIconReportsCellDimensions(): void
+    {
+        $icon = Stipple::make(self::SYNTHETIC_FIXTURE)
+            ->height(2)
+            ->sampler(new HalfBlockSampler())
+            ->toIcon();
+
+        // 4x4 viewBox at height(2): cellsWide = round(2 * 1.0 * 2) = 4.
+        self::assertSame(4, $icon->widthCells);
+        self::assertSame(2, $icon->heightCells);
+        self::assertCount($icon->heightCells, $icon->rows);
+    }
+
+    #[Test]
+    public function toIconWidthTracksAspectRatio(): void
+    {
+        $wide = Stipple::makeFromString(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 16">'
+            .'<rect width="32" height="16" fill="currentColor"/></svg>',
+        )->height(2)->sampler(new HalfBlockSampler())->toIcon();
+
+        self::assertSame(8, $wide->widthCells);
+        self::assertSame(8, mb_strlen($wide->blankRow()));
+    }
+
+    #[Test]
+    public function toIconCarriesTheSamplersBlankCell(): void
+    {
+        $braille = Stipple::make(self::SYNTHETIC_FIXTURE)->height(2)->sampler(new BrailleSampler())->toIcon();
+        $halfBlock = Stipple::make(self::SYNTHETIC_FIXTURE)->height(2)->sampler(new HalfBlockSampler())->toIcon();
+
+        self::assertSame("\u{2800}", $braille->blankCell);
+        self::assertSame(' ', $halfBlock->blankCell);
+    }
+
+    #[Test]
     public function renderShortcutMatchesFluentToString(): void
     {
         self::assertSame(

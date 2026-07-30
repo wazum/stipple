@@ -112,6 +112,49 @@ echo (string) Stipple::make('/path/to/icon.svg')->height(4);
 
 The output is a plain string ending in `\n` per row, safe to `echo` or pass to Laravel/Prompts' `note()`/`info()`.
 
+## Laying out icons
+
+To put an icon *beside* something — other icons, a menu label, a table column — use `toIcon()` and
+get the rows unjoined:
+
+```php
+use Wazum\Stipple\RenderedIcon;
+
+$icon = Stipple::make('/path/to/icon.svg')->height(4)->toIcon();
+
+$icon->rows;        // list<string>, one entry per cell row, no trailing newline
+$icon->widthCells;  // visible width in terminal cells
+$icon->heightCells; // always equals count($icon->rows)
+$icon->blankCell;   // the sampler's empty-cell glyph
+$icon->row(9);      // any row; out of range yields a blank row of widthCells
+$icon->blankRow();  // a full row of blank cells
+echo $icon;         // same string toString() would have produced
+```
+
+**Measure rows with `widthCells`, never `strlen()`/`mb_strlen()`** — non-blank rows carry SGR escapes
+and blank rows don't, so equal-width rows measure differently.
+
+Icons side by side, the pattern `bin/icon-row.php` uses:
+
+```php
+$icons = array_map(
+    static fn (string $path): RenderedIcon => Stipple::make($path)->height(4)->toIcon(),
+    $paths,
+);
+
+$lineCount = max(array_map(static fn (RenderedIcon $icon): int => $icon->heightCells, $icons));
+
+for ($line = 0; $line < $lineCount; $line++) {
+    echo implode('  ', array_map(
+        static fn (RenderedIcon $icon): string => $icon->row($line),
+        $icons,
+    )), "\n";
+}
+```
+
+`row()` pads with the icon's own `blankCell` — `U+2800` for Braille, not a space — so mixed heights
+and aspect ratios stay column-aligned.
+
 ## Samplers
 
 ```php

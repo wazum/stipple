@@ -14,6 +14,12 @@ final class BrailleSamplerTest extends TestCase
     private const OPAQUE = 0;
 
     #[Test]
+    public function blankCellIsTheEmptyBraillePattern(): void
+    {
+        self::assertSame("\u{2800}", (new BrailleSampler())->blankCell());
+    }
+
+    #[Test]
     public function pixelsPerCellAdvertises2x4(): void
     {
         $sampler = new BrailleSampler();

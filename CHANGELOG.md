@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- `Stipple::toIcon(): RenderedIcon` for laying icons out beside other output — the rows unjoined,
+  plus `widthCells`, `heightCells`, `blankCell`, `row()` and `blankRow()`. `row()` pads out-of-range
+  rows with the sampler's blank cell so mixed heights and aspect ratios stay column-aligned.
+  `toString()` is now `toIcon()` joined; its output is unchanged.
+
 - `currentColor` and `var(--icon-color-accent, …)` are now substituted inside `<style>` element
   CSS, not just inside `fill`/`stroke`/`style` attributes. Icons styled through a stylesheet
   previously rendered as blank rows with no error.
@@ -16,6 +21,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
+- **`SamplerInterface` gained `blankCell(): string`.** Custom samplers must implement it, so that
+  padding uses the sampler's blank cell (`U+2800` for Braille) rather than a space.
 - **`Stipple::make()` accepts local filesystem paths only.** Stream wrappers (`http://`,
   `data://`, `php://`, …) now throw `InvalidArgumentException` instead of being read, so a
   caller-supplied path cannot trigger an outbound request under the default `allow_url_fopen`.

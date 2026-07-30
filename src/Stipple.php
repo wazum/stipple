@@ -141,6 +141,15 @@ final class Stipple
 
     public function toString(): string
     {
+        return $this->toIcon()->toString();
+    }
+
+    /**
+     * The rendered rows plus their cell dimensions, for laying icons out next to other output.
+     * toString() is this, joined.
+     */
+    public function toIcon(): RenderedIcon
+    {
         $sampler = $this->sampler ?? new BrailleSampler();
         $rasterizer = $this->rasterizer ?? new PhpSvgRasterizer();
         $preprocessor = new SvgPreprocessor();
@@ -166,8 +175,14 @@ final class Stipple
         }
 
         $image = $rasterizer->rasterize($cleaned->svg, $widthPx, $heightPx);
+        $sampled = $sampler->sample($image, $this->foregroundHex, $this->threshold);
 
-        return $sampler->sample($image, $this->foregroundHex, $this->threshold);
+        return new RenderedIcon(
+            $sampled === '' ? [] : explode("\n", rtrim($sampled, "\n")),
+            $cellsWide,
+            $this->heightCells,
+            $sampler->blankCell(),
+        );
     }
 
     public function __toString(): string
