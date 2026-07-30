@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Sampler;
 
-use Wazum\Stipple\Exception\InvalidArgumentException;
-
 interface SamplerInterface
 {
     /**
@@ -24,12 +22,9 @@ interface SamplerInterface
     public function blankCell(): string;
 
     /**
-     * Convert a rasterized image into a monochrome ANSI string. Each row ends with
-     * "\n"; non-blank rows are wrapped in <fg-SGR>…\e[0m so callers can echo the
-     * result directly. $foregroundHex is null for the terminal default fg, otherwise
-     * a 6-digit "#rrggbb" emitted as a 24-bit truecolor SGR.
-     *
-     * @throws InvalidArgumentException when $foregroundHex is not a 6-digit hex colour
+     * Convert a rasterized true-colour image into a monochrome ANSI string. Each row ends
+     * with "\n"; non-blank rows are wrapped in <fg-SGR>…\e[0m so callers can echo the
+     * result directly.
      */
-    public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string;
+    public function sample(\GdImage $image, SamplerOptions $options): string;
 }

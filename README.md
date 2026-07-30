@@ -202,13 +202,26 @@ Stipple::make($path)->rasterizer(new RsvgConvertRasterizer())->toString();
 ```
 
 Custom samplers implement `SamplerInterface`; extending `AbstractSampler` gives you the shared
-pixel-threshold and SGR helpers.
+pixel-threshold and SGR helpers:
+
+```php
+public function sample(\GdImage $image, SamplerOptions $options): string
+```
+
+`SamplerOptions` carries the colour and threshold and validates both on construction, so a sampler
+never has to check them. `color()`/`threshold()` build it for you, or pass one directly:
+
+```php
+use Wazum\Stipple\Sampler\SamplerOptions;
+
+Stipple::make($path)->samplerOptions(new SamplerOptions('#00ffff', 0.4))->toString();
+```
 
 ## Public API
 
-Covered by semantic versioning: `Stipple`, `RenderedIcon`, `SamplerInterface`, `BrailleSampler`,
-`HalfBlockSampler`, `AbstractSampler`, `RasterizerInterface`, `PhpSvgRasterizer` and the
-`Exception\*` hierarchy.
+Covered by semantic versioning: `Stipple`, `RenderedIcon`, `SamplerInterface`, `SamplerOptions`,
+`BrailleSampler`, `HalfBlockSampler`, `AbstractSampler`, `RasterizerInterface`, `PhpSvgRasterizer`
+and the `Exception\*` hierarchy.
 
 `SvgPreprocessor` and `PreprocessedSvg` are marked `@internal` and may change in any release.
 

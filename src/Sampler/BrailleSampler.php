@@ -40,7 +40,7 @@ final class BrailleSampler extends AbstractSampler
         return self::BLANK_CELL;
     }
 
-    public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string
+    public function sample(\GdImage $image, SamplerOptions $options): string
     {
         $this->assertTrueColorImage($image);
 
@@ -49,7 +49,7 @@ final class BrailleSampler extends AbstractSampler
 
         $cellRows = (int) ceil($heightPx / self::PIXELS_PER_CELL_Y);
         $cellCols = (int) ceil($widthPx / self::PIXELS_PER_CELL_X);
-        $foregroundSgr = $this->buildForegroundSgr($foregroundHex);
+        $foregroundSgr = $this->buildForegroundSgr($options->foregroundHex);
 
         $output = '';
         for ($cellRow = 0; $cellRow < $cellRows; $cellRow++) {
@@ -63,7 +63,7 @@ final class BrailleSampler extends AbstractSampler
                     $cellRow * self::PIXELS_PER_CELL_Y,
                     $widthPx,
                     $heightPx,
-                    $threshold,
+                    $options->threshold,
                 );
 
                 $cellsString .= mb_chr(self::BRAILLE_BLOCK_START + $bits, 'UTF-8');

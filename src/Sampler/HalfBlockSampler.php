@@ -29,7 +29,7 @@ final class HalfBlockSampler extends AbstractSampler
         return self::CHAR_BLANK;
     }
 
-    public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string
+    public function sample(\GdImage $image, SamplerOptions $options): string
     {
         $this->assertTrueColorImage($image);
 
@@ -37,7 +37,7 @@ final class HalfBlockSampler extends AbstractSampler
         $heightPx = imagesy($image);
 
         $cellRows = (int) ceil($heightPx / self::PIXELS_PER_CELL_Y);
-        $foregroundSgr = $this->buildForegroundSgr($foregroundHex);
+        $foregroundSgr = $this->buildForegroundSgr($options->foregroundHex);
 
         $output = '';
         for ($cellRow = 0; $cellRow < $cellRows; $cellRow++) {
@@ -47,8 +47,8 @@ final class HalfBlockSampler extends AbstractSampler
             $bottomRow = $topRow + 1;
 
             for ($column = 0; $column < $widthPx; $column++) {
-                $topOn = $this->pixelOn($image, $column, $topRow, $widthPx, $heightPx, $threshold);
-                $bottomOn = $this->pixelOn($image, $column, $bottomRow, $widthPx, $heightPx, $threshold);
+                $topOn = $this->pixelOn($image, $column, $topRow, $widthPx, $heightPx, $options->threshold);
+                $bottomOn = $this->pixelOn($image, $column, $bottomRow, $widthPx, $heightPx, $options->threshold);
 
                 $character = match (true) {
                     $topOn && $bottomOn => self::CHAR_FULL,

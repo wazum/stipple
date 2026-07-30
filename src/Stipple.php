@@ -9,6 +9,7 @@ use Wazum\Stipple\Rasterizer\PhpSvgRasterizer;
 use Wazum\Stipple\Rasterizer\RasterizerInterface;
 use Wazum\Stipple\Sampler\BrailleSampler;
 use Wazum\Stipple\Sampler\SamplerInterface;
+use Wazum\Stipple\Sampler\SamplerOptions;
 
 final class Stipple
 {
@@ -18,16 +19,16 @@ final class Stipple
     /** @var int<1, 256> */
     private int $heightCells = 8;
 
-    private ?string $foregroundHex = null;
     private ?string $accentHex = null;
-    private float $threshold = 0.5;
     private int $maxRasterDimension = self::DEFAULT_MAX_RASTER_DIMENSION;
 
+    private SamplerOptions $samplerOptions;
     private ?RasterizerInterface $rasterizer = null;
     private ?SamplerInterface $sampler = null;
 
     private function __construct(private readonly string $svg)
     {
+        $this->samplerOptions = new SamplerOptions();
     }
 
     public static function render(string $path): string
@@ -77,12 +78,8 @@ final class Stipple
 
     public function color(?string $hex): self
     {
-        if ($hex !== null && preg_match(self::HEX_PATTERN, $hex) !== 1) {
-            throw new InvalidArgumentException(sprintf('Color must be a 6-digit hex like "#aabbcc"; got %s.', $hex));
-        }
-
         $clone = clone $this;
-        $clone->foregroundHex = $hex === null ? null : strtolower($hex);
+        $clone->samplerOptions = new SamplerOptions($hex, $this->samplerOptions->threshold);
 
         return $clone;
     }
@@ -101,17 +98,19 @@ final class Stipple
 
     public function threshold(float $luminance): self
     {
-        // Checked separately from the range: NAN passes both comparisons, and casting it
-        // into the message would emit a PHP 8.5 warning.
-        if (!is_finite($luminance)) {
-            throw new InvalidArgumentException('Threshold must be a finite number in [0.0, 1.0].');
-        }
-        if ($luminance < 0.0 || $luminance > 1.0) {
-            throw new InvalidArgumentException(sprintf('Threshold must be in [0.0, 1.0]; got %s.', (string) $luminance));
-        }
-
         $clone = clone $this;
-        $clone->threshold = $luminance;
+        $clone->samplerOptions = new SamplerOptions($this->samplerOptions->foregroundHex, $luminance);
+
+        return $clone;
+    }
+
+    /**
+     * Replaces colour and threshold in one call; equivalent to color() plus threshold().
+     */
+    public function samplerOptions(SamplerOptions $options): self
+    {
+        $clone = clone $this;
+        $clone->samplerOptions = $options;
 
         return $clone;
     }
@@ -180,7 +179,7 @@ final class Stipple
         }
 
         $image = $rasterizer->rasterize($cleaned->svg, $widthPx, $heightPx);
-        $sampled = $sampler->sample($image, $this->foregroundHex, $this->threshold);
+        $sampled = $sampler->sample($image, $this->samplerOptions);
 
         return new RenderedIcon(
             $sampled === '' ? [] : explode("\n", rtrim($sampled, "\n")),

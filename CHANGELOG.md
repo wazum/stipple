@@ -27,6 +27,11 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Changed
 
+- **`SamplerInterface::sample()` now takes a `SamplerOptions` object** instead of positional
+  `?string $foregroundHex, float $threshold`. Options can then be added without breaking the
+  interface again. `SamplerOptions` validates the colour and threshold on construction, so an
+  invalid combination is unconstructable and samplers no longer re-check. `Stipple::color()` and
+  `threshold()` are unchanged; `Stipple::samplerOptions()` sets both at once.
 - **`SamplerInterface` gained `blankCell(): string`.** Custom samplers must implement it, so that
   padding uses the sampler's blank cell (`U+2800` for Braille) rather than a space.
 - **`Stipple::make()` accepts local filesystem paths only.** Stream wrappers (`http://`,

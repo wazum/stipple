@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Tests\Unit\Sampler;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Exception\InvalidArgumentException;
 use Wazum\Stipple\Sampler\HalfBlockSampler;
+use Wazum\Stipple\Sampler\SamplerOptions;
 
 final class HalfBlockSamplerTest extends TestCase
 {
@@ -32,7 +32,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [0, 0, 0, self::TRANSPARENT]],
         ]);
 
-        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -43,7 +43,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [255, 255, 255, self::OPAQUE]],
         ]);
 
-        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -54,7 +54,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [255, 255, 255, self::OPAQUE]],
         ]);
 
-        self::assertSame("\e[38;2;0;255;255m█\e[0m\n", (new HalfBlockSampler())->sample($image, '#00ffff', 0.5));
+        self::assertSame("\e[38;2;0;255;255m█\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions('#00ffff', 0.5)));
     }
 
     /**
@@ -74,8 +74,8 @@ final class HalfBlockSamplerTest extends TestCase
         $sampler = new HalfBlockSampler();
 
         // Blue alone falls below 0.2; at 0.35 only green survives.
-        self::assertSame("\e[39m██ █\e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), null, 0.2));
-        self::assertSame("\e[39m █  \e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), null, 0.35));
+        self::assertSame("\e[39m██ █\e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.2)));
+        self::assertSame("\e[39m █  \e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.35)));
     }
 
     #[Test]
@@ -94,33 +94,7 @@ final class HalfBlockSamplerTest extends TestCase
         imagecolorallocate($image, 255, 255, 255);
 
         $this->expectException(InvalidArgumentException::class);
-        (new HalfBlockSampler())->sample($image, null, 0.5);
-    }
-
-    #[Test]
-    #[DataProvider('malformedForegroundHexProvider')]
-    public function malformedForegroundHexIsRejected(string $hex): void
-    {
-        $image = $this->imageOf(1, 2, [
-            [0, 0, [255, 255, 255, self::OPAQUE]],
-            [0, 1, [255, 255, 255, self::OPAQUE]],
-        ]);
-
-        $this->expectException(InvalidArgumentException::class);
-        (new HalfBlockSampler())->sample($image, $hex, 0.5);
-    }
-
-    /**
-     * @return iterable<string, array{0: string}>
-     */
-    public static function malformedForegroundHexProvider(): iterable
-    {
-        yield 'not hex at all' => ['nonsense'];
-        yield 'missing hash' => ['00ffff'];
-        yield 'short form' => ['#fff'];
-        yield 'named colour' => ['red'];
-        yield 'empty string' => [''];
-        yield 'trailing garbage' => ['#00ffffzz'];
+        (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5));
     }
 
     #[Test]
@@ -131,7 +105,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [0, 0, 0, self::TRANSPARENT]],
         ]);
 
-        self::assertSame("\e[39m▀\e[0m\n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m▀\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -142,7 +116,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [255, 255, 255, self::OPAQUE]],
         ]);
 
-        self::assertSame("\e[39m▄\e[0m\n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m▄\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -153,7 +127,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [0, 0, 0, self::OPAQUE]],
         ]);
 
-        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -165,7 +139,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [255, 255, 255, 63]],
         ]);
 
-        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -177,7 +151,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [127, 127, 127, self::OPAQUE]],
         ]);
 
-        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -188,7 +162,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [1, 1, 1, self::OPAQUE]],
         ]);
 
-        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, null, 0.0));
+        self::assertSame("\e[39m█\e[0m\n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.0)));
     }
 
     #[Test]
@@ -200,13 +174,13 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 0, [255, 255, 255, self::OPAQUE]],
             [0, 1, [255, 255, 255, self::OPAQUE]],
         ]);
-        self::assertSame("\e[39m█\e[0m\n", $sampler->sample($whiteImage, null, 1.0));
+        self::assertSame("\e[39m█\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0)));
 
         $almostWhite = $this->imageOf(1, 2, [
             [0, 0, [254, 254, 254, self::OPAQUE]],
             [0, 1, [254, 254, 254, self::OPAQUE]],
         ]);
-        self::assertSame(" \n", $sampler->sample($almostWhite, null, 1.0));
+        self::assertSame(" \n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0)));
     }
 
     #[Test]
@@ -225,7 +199,7 @@ final class HalfBlockSamplerTest extends TestCase
 
         self::assertSame(
             "\e[39m▀▄\e[0m\n\e[39m▀▄\e[0m\n",
-            (new HalfBlockSampler())->sample($image, null, 0.5),
+            (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -243,7 +217,7 @@ final class HalfBlockSamplerTest extends TestCase
             [1, 3, [0, 0, 0, self::TRANSPARENT]],
         ]);
 
-        self::assertSame("\e[39m██\e[0m\n  \n", (new HalfBlockSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m██\e[0m\n  \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -257,7 +231,7 @@ final class HalfBlockSamplerTest extends TestCase
 
         self::assertSame(
             "\e[39m█\e[0m\n\e[39m▀\e[0m\n",
-            (new HalfBlockSampler())->sample($image, null, 0.5),
+            (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)),
         );
     }
 

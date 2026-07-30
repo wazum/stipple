@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Sampler\BrailleSampler;
+use Wazum\Stipple\Sampler\SamplerOptions;
 
 final class BrailleSamplerTest extends TestCase
 {
@@ -33,7 +34,7 @@ final class BrailleSamplerTest extends TestCase
     {
         self::assertSame(
             "\u{2800}\n",
-            (new BrailleSampler())->sample($this->fillTransparent(2, 4), null, 0.5),
+            (new BrailleSampler())->sample($this->fillTransparent(2, 4), new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -42,7 +43,7 @@ final class BrailleSamplerTest extends TestCase
     {
         self::assertSame(
             "\e[39m\u{28FF}\e[0m\n",
-            (new BrailleSampler())->sample($this->fillOpaqueWhite(2, 4), null, 0.5),
+            (new BrailleSampler())->sample($this->fillOpaqueWhite(2, 4), new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -51,7 +52,7 @@ final class BrailleSamplerTest extends TestCase
     {
         self::assertSame(
             "\e[38;2;0;255;255m\u{28FF}\e[0m\n",
-            (new BrailleSampler())->sample($this->fillOpaqueWhite(2, 4), '#00ffff', 0.5),
+            (new BrailleSampler())->sample($this->fillOpaqueWhite(2, 4), new SamplerOptions('#00ffff', 0.5)),
         );
     }
 
@@ -64,7 +65,7 @@ final class BrailleSamplerTest extends TestCase
 
         self::assertSame(
             sprintf("\e[39m%s\e[0m\n", mb_chr($expectedCodepoint, 'UTF-8')),
-            (new BrailleSampler())->sample($image, null, 0.5),
+            (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -92,7 +93,7 @@ final class BrailleSamplerTest extends TestCase
         $this->setPixel($image, 0, 1, [255, 255, 255, self::OPAQUE]);
         $this->setPixel($image, 1, 1, [255, 255, 255, self::OPAQUE]);
 
-        self::assertSame("\e[39m\u{2813}\e[0m\n", (new BrailleSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m\u{2813}\e[0m\n", (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -101,7 +102,7 @@ final class BrailleSamplerTest extends TestCase
         $image = $this->fillTransparent(2, 4);
         $this->setPixel($image, 0, 0, [0, 0, 0, self::OPAQUE]);
 
-        self::assertSame("\u{2800}\n", (new BrailleSampler())->sample($image, null, 0.5));
+        self::assertSame("\u{2800}\n", (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     #[Test]
@@ -110,7 +111,7 @@ final class BrailleSamplerTest extends TestCase
         $sampler = new BrailleSampler();
 
         $whiteImage = $this->fillOpaqueWhite(2, 4);
-        self::assertSame("\e[39m\u{28FF}\e[0m\n", $sampler->sample($whiteImage, null, 1.0));
+        self::assertSame("\e[39m\u{28FF}\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0)));
 
         $almostWhite = $this->fillTransparent(2, 4);
         for ($x = 0; $x < 2; $x++) {
@@ -118,7 +119,7 @@ final class BrailleSamplerTest extends TestCase
                 $this->setPixel($almostWhite, $x, $y, [254, 254, 254, self::OPAQUE]);
             }
         }
-        self::assertSame("\u{2800}\n", $sampler->sample($almostWhite, null, 1.0));
+        self::assertSame("\u{2800}\n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0)));
     }
 
     #[Test]
@@ -134,7 +135,7 @@ final class BrailleSamplerTest extends TestCase
 
         self::assertSame(
             "\e[39m\u{28FF}\e[0m\n\u{2800}\n",
-            (new BrailleSampler())->sample($image, null, 0.5),
+            (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -151,7 +152,7 @@ final class BrailleSamplerTest extends TestCase
 
         self::assertSame(
             "\e[39m\u{28FF}\u{2800}\e[0m\n",
-            (new BrailleSampler())->sample($image, null, 0.5),
+            (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)),
         );
     }
 
@@ -162,7 +163,7 @@ final class BrailleSamplerTest extends TestCase
         $image = $this->fillTransparent(1, 1);
         $this->setPixel($image, 0, 0, [255, 255, 255, self::OPAQUE]);
 
-        self::assertSame("\e[39m\u{2801}\e[0m\n", (new BrailleSampler())->sample($image, null, 0.5));
+        self::assertSame("\e[39m\u{2801}\e[0m\n", (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)));
     }
 
     /**
