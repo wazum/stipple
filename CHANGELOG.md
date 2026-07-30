@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-07-30
+
+First stable release. The public API is now covered by semantic versioning; see
+[Public API](README.md#public-api) for what that includes.
 
 ### Added
 
@@ -33,12 +36,21 @@ All notable changes to this project will be documented in this file. The format 
 - **Samplers require a true-colour image** and throw `InvalidArgumentException` for a palette
   image, which the packed-pixel read cannot interpret. `RasterizerInterface` already documented
   true-colour output; custom rasterizers returning a palette image must now convert.
+- `SvgPreprocessor` and `PreprocessedSvg` are marked `@internal` and excluded from the
+  backward compatibility promise.
+- `friendsofphp/php-cs-fixer` now requires `^3.75`; the previous `^3.50` floor could not parse
+  this project's own fixer configuration.
 
 ### Fixed
 
 - Blank input (empty file, empty string, unreadable directory) raises `InvalidSvgException`
   instead of letting `DOMDocument::loadXML()`'s raw `ValueError` escape the `StippleException`
   contract.
+- `threshold(NAN)` is rejected. `NAN` compares false against both range bounds, so it was
+  accepted and then turned every pixel off.
+- Aspect ratios that overflow or collapse are rejected. Two individually finite dimensions can
+  still divide to `INF` or `0.0` (`viewBox="0 0 1e308 1e-308"`), which previously produced a
+  one-cell blank icon or a confusing error from the rasterizer.
 
 ### Performance
 
@@ -48,8 +60,15 @@ All notable changes to this project will be documented in this file. The format 
 ### Documentation
 
 - Added Packagist, PHP version, CI, PHPStan and license badges.
-- Documented that gradient-filled icons (`fill="url(#…)"`) render blank, a `meyfa/php-svg`
-  limitation stipple cannot detect.
+- Documented the supported public API surface.
+- Documented that gradient- and pattern-filled icons (`fill="url(#…)"`) render blank, a
+  `meyfa/php-svg` limitation.
+
+### Internal
+
+- CI covers PHP 8.2 through 8.5, adds a `--prefer-lowest` job so the declared dependency floor is
+  actually exercised, and runs php-cs-fixer on the minimum PHP version.
+- PHPStan raised from level 8 to level 10 across `src` and `tests`.
 
 ## [0.1.0] - 2026-05-08
 
@@ -66,5 +85,5 @@ All notable changes to this project will be documented in this file. The format 
   `LIBXML_NONET`, rejection of `<script>`, `<foreignObject>`, and all `<image>` elements,
   `currentColor` and `var(--icon-color-accent, …)` substitution.
 
-[Unreleased]: https://github.com/wazum/stipple/compare/v0.1.0...HEAD
+[1.0.0]: https://github.com/wazum/stipple/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/wazum/stipple/releases/tag/v0.1.0

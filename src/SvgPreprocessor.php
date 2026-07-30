@@ -6,6 +6,9 @@ namespace Wazum\Stipple;
 
 use Wazum\Stipple\Exception\InvalidSvgException;
 
+/**
+ * @internal not covered by the backward compatibility promise; use Stipple instead
+ */
 final class SvgPreprocessor
 {
     private const CURRENT_COLOR_REPLACEMENT = '#ffffff';

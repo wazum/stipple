@@ -1,5 +1,7 @@
 parameters:
-    level: 8
+    # Pinned numerically rather than "max": max moves with PHPStan releases, and CI resolves
+    # dependencies unpinned, so a new minor would fail an otherwise unrelated commit.
+    level: 10
     paths:
         - src
         - tests

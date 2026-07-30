@@ -35,7 +35,7 @@
         "meyfa/php-svg": "^0.16"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.50",
+        "friendsofphp/php-cs-fixer": "^3.75",
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^11"
     },

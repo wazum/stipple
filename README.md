@@ -201,6 +201,17 @@ final class RsvgConvertRasterizer implements RasterizerInterface
 Stipple::make($path)->rasterizer(new RsvgConvertRasterizer())->toString();
 ```
 
+Custom samplers implement `SamplerInterface`; extending `AbstractSampler` gives you the shared
+pixel-threshold and SGR helpers.
+
+## Public API
+
+Covered by semantic versioning: `Stipple`, `RenderedIcon`, `SamplerInterface`, `BrailleSampler`,
+`HalfBlockSampler`, `AbstractSampler`, `RasterizerInterface`, `PhpSvgRasterizer` and the
+`Exception\*` hierarchy.
+
+`SvgPreprocessor` and `PreprocessedSvg` are marked `@internal` and may change in any release.
+
 ## Security
 
 The preprocessor hardens SVG input before rasterization:

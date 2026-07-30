@@ -101,8 +101,12 @@ final class Stipple
 
     public function threshold(float $luminance): self
     {
-        // NAN passes both comparisons, so it needs the explicit finiteness check.
-        if (!is_finite($luminance) || $luminance < 0.0 || $luminance > 1.0) {
+        // Checked separately from the range: NAN passes both comparisons, and casting it
+        // into the message would emit a PHP 8.5 warning.
+        if (!is_finite($luminance)) {
+            throw new InvalidArgumentException('Threshold must be a finite number in [0.0, 1.0].');
+        }
+        if ($luminance < 0.0 || $luminance > 1.0) {
             throw new InvalidArgumentException(sprintf('Threshold must be in [0.0, 1.0]; got %s.', (string) $luminance));
         }
 
