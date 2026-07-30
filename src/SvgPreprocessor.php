@@ -11,6 +11,22 @@ final class SvgPreprocessor
     private const CURRENT_COLOR_REPLACEMENT = '#ffffff';
     private const ACCENT_VAR_PATTERN = '/var\(\s*--icon-color-accent\s*(?:,\s*([^)]+))?\s*\)/i';
 
+    /**
+     * Absolute CSS lengths in px (1in = 96px). Normalising to a common base keeps a
+     * mismatched pair like width="1in" height="72pt" correct.
+     *
+     * @var array<string, float>
+     */
+    private const ABSOLUTE_UNIT_FACTORS = [
+        'px' => 1.0,
+        'pt' => 96.0 / 72.0,
+        'pc' => 16.0,
+        'in' => 96.0,
+        'cm' => 96.0 / 2.54,
+        'mm' => 96.0 / 25.4,
+        'q' => 96.0 / 101.6,
+    ];
+
     public function clean(string $svg, ?string $accent): PreprocessedSvg
     {
         $this->rejectBlankInput($svg);
@@ -218,13 +234,39 @@ final class SvgPreprocessor
             return $width / $height;
         }
 
-        $width = $this->parseStrictFloat(trim((string) $root->getAttribute('width')));
-        $height = $this->parseStrictFloat(trim((string) $root->getAttribute('height')));
+        $width = $this->parseRootLength(trim((string) $root->getAttribute('width')));
+        $height = $this->parseRootLength(trim((string) $root->getAttribute('height')));
         if ($width !== null && $height !== null && $width > 0.0 && $height > 0.0) {
             return $width / $height;
         }
 
         throw new InvalidSvgException('SVG must declare either viewBox or numeric width/height.');
+    }
+
+    /**
+     * Unlike viewBox, which the spec defines as bare numbers, width/height may carry an
+     * absolute CSS unit. Relative units (%, em, ex) need a viewport we do not have.
+     */
+    private function parseRootLength(string $token): ?float
+    {
+        $factor = 1.0;
+        foreach (self::ABSOLUTE_UNIT_FACTORS as $unit => $unitFactor) {
+            if (strcasecmp(substr($token, -strlen($unit)), $unit) !== 0) {
+                continue;
+            }
+            $token = trim(substr($token, 0, -strlen($unit)));
+            $factor = $unitFactor;
+            break;
+        }
+
+        $value = $this->parseStrictFloat($token);
+        if ($value === null) {
+            return null;
+        }
+
+        $pixels = $value * $factor;
+
+        return is_finite($pixels) ? $pixels : null;
     }
 
     /**

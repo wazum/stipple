@@ -196,6 +196,30 @@ final class SvgPreprocessorTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('absoluteUnitDimensionProvider')]
+    public function noViewBoxButWidthHeightWithAbsoluteUnits(string $svg, float $expectedAspectRatio): void
+    {
+        $result = $this->preprocessor->clean($svg, null);
+
+        self::assertEqualsWithDelta($expectedAspectRatio, $result->aspectRatio, 1e-9);
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: float}>
+     */
+    public static function absoluteUnitDimensionProvider(): iterable
+    {
+        yield 'px' => ['<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="32px"/>', 2.0];
+        yield 'pt' => ['<svg xmlns="http://www.w3.org/2000/svg" width="64pt" height="32pt"/>', 2.0];
+        yield 'pc' => ['<svg xmlns="http://www.w3.org/2000/svg" width="6pc" height="3pc"/>', 2.0];
+        yield 'cm' => ['<svg xmlns="http://www.w3.org/2000/svg" width="4cm" height="2cm"/>', 2.0];
+        yield 'mm' => ['<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="20mm"/>', 2.0];
+        yield 'uppercase unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="64PX" height="32PX"/>', 2.0];
+        yield 'decimal with unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="16.5px" height="8.25px"/>', 2.0];
+        yield 'mixed in and pt' =>['<svg xmlns="http://www.w3.org/2000/svg" width="1in" height="72pt"/>', 1.0];
+    }
+
+    #[Test]
     public function noViewBoxNoDimensionsIsRejected(): void
     {
         $this->expectException(InvalidSvgException::class);
@@ -222,7 +246,11 @@ final class SvgPreprocessorTest extends TestCase
         yield 'viewBox with px unit' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16px 16"/>'];
         yield 'viewBox with garbage' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 sixteen 16"/>'];
         yield 'width overflow to INF' => ['<svg xmlns="http://www.w3.org/2000/svg" width="1e309" height="16"/>'];
-        yield 'width with px suffix' => ['<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="32px"/>'];
+        yield 'width overflow via unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="1e307in" height="16"/>'];
+        yield 'percentage width' => ['<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>'];
+        yield 'em width' => ['<svg xmlns="http://www.w3.org/2000/svg" width="4em" height="2em"/>'];
+        yield 'ex width' => ['<svg xmlns="http://www.w3.org/2000/svg" width="4ex" height="2ex"/>'];
+        yield 'unknown unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="4blah" height="2blah"/>'];
         yield 'viewBox min-x is garbage' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="abc 0 16 16"/>'];
         yield 'viewBox min-y is garbage' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 def 16 16"/>'];
         yield 'viewBox min-x overflow' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="1e309 0 16 16"/>'];

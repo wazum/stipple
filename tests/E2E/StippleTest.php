@@ -176,6 +176,20 @@ final class StippleTest extends TestCase
     }
 
     #[Test]
+    public function pxDimensionedSvgWithoutViewBoxRenders(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="4px" height="4px">'
+            .'<rect x="0" y="0" width="4" height="4" fill="currentColor"/></svg>';
+
+        $output = Stipple::makeFromString($svg)
+            ->height(2)
+            ->sampler(new HalfBlockSampler())
+            ->toString();
+
+        self::assertSame("\e[39m████\e[0m\n\e[39m████\e[0m\n", $output);
+    }
+
+    #[Test]
     public function streamWrapperPathIsRejected(): void
     {
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">'
