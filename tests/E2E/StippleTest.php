@@ -7,6 +7,7 @@ namespace Wazum\Stipple\Tests\E2E;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Exception\InvalidArgumentException;
+use Wazum\Stipple\Exception\StippleException;
 use Wazum\Stipple\Sampler\BrailleSampler;
 use Wazum\Stipple\Sampler\HalfBlockSampler;
 use Wazum\Stipple\Stipple;
@@ -172,6 +173,28 @@ final class StippleTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         Stipple::make('/no/such/file/here.svg');
+    }
+
+    #[Test]
+    public function emptyFileThrowsStippleException(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'stipple');
+        self::assertNotFalse($path);
+        file_put_contents($path, '');
+
+        try {
+            $this->expectException(StippleException::class);
+            Stipple::make($path)->toString();
+        } finally {
+            unlink($path);
+        }
+    }
+
+    #[Test]
+    public function emptyStringThrowsStippleException(): void
+    {
+        $this->expectException(StippleException::class);
+        Stipple::makeFromString('')->toString();
     }
 
     #[Test]

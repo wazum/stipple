@@ -13,6 +13,7 @@ final class SvgPreprocessor
 
     public function clean(string $svg, ?string $accent): PreprocessedSvg
     {
+        $this->rejectBlankInput($svg);
         $this->rejectDoctypeAndEntities($svg);
 
         // XXE defence is layered: the DOCTYPE/ENTITY pre-scan rejects any document that
@@ -52,6 +53,16 @@ final class SvgPreprocessor
             return new PreprocessedSvg($serialized, $aspectRatio);
         } finally {
             libxml_use_internal_errors($previousErrorState);
+        }
+    }
+
+    /**
+     * loadXML() throws a raw ValueError on empty input, escaping the StippleException contract.
+     */
+    private function rejectBlankInput(string $svg): void
+    {
+        if (trim($svg) === '') {
+            throw new InvalidSvgException('SVG input is empty.');
         }
     }
 

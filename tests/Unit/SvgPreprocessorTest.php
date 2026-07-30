@@ -57,6 +57,24 @@ final class SvgPreprocessorTest extends TestCase
         $this->preprocessor->clean($svg, null);
     }
 
+    #[Test]
+    #[DataProvider('blankInputProvider')]
+    public function blankInputIsRejectedAsInvalidSvg(string $svg): void
+    {
+        $this->expectException(InvalidSvgException::class);
+        $this->preprocessor->clean($svg, null);
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function blankInputProvider(): iterable
+    {
+        yield 'empty string' => [''];
+        yield 'spaces only' => ['   '];
+        yield 'newlines only' => ["\n\n"];
+    }
+
     // ---------- Disallowed elements ----------
 
     #[Test]
