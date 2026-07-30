@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Tests\E2E;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Exception\InvalidArgumentException;
@@ -300,6 +301,27 @@ final class StippleTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $instance->threshold(-0.1);
+    }
+
+    #[Test]
+    #[DataProvider('nonFiniteThresholdProvider')]
+    public function nonFiniteThresholdRejected(float $threshold): void
+    {
+        $instance = Stipple::makeFromString('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>');
+
+        $this->expectException(InvalidArgumentException::class);
+        $instance->threshold($threshold);
+    }
+
+    /**
+     * @return iterable<string, array{0: float}>
+     */
+    public static function nonFiniteThresholdProvider(): iterable
+    {
+        // NAN slips past a naive range check: both < and > comparisons are false for NAN.
+        yield 'NAN' => [NAN];
+        yield 'INF' => [INF];
+        yield '-INF' => [-INF];
     }
 
     #[Test]
