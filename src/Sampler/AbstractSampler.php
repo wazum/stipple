@@ -18,6 +18,18 @@ abstract class AbstractSampler implements SamplerInterface
     abstract public function sample(\GdImage $image, SamplerOptions $options): string;
 
     /**
+     * Ends a row, adding colour codes only when the row has ink and output is decorated.
+     */
+    final protected function wrapRow(string $cells, bool $hasInk, SamplerOptions $options): string
+    {
+        if (!$hasInk || !$options->decorated) {
+            return $cells."\n";
+        }
+
+        return $this->buildForegroundSgr($options->foregroundHex).$cells.self::RESET_SGR."\n";
+    }
+
+    /**
      * Call once per sample(), never per pixel: pixelOn() assumes packed true-colour ints.
      */
     final protected function assertTrueColorImage(\GdImage $image): void

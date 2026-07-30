@@ -49,7 +49,6 @@ final class BrailleSampler extends AbstractSampler
 
         $cellRows = (int) ceil($heightPx / self::PIXELS_PER_CELL_Y);
         $cellCols = (int) ceil($widthPx / self::PIXELS_PER_CELL_X);
-        $foregroundSgr = $this->buildForegroundSgr($options->foregroundHex);
 
         $output = '';
         for ($cellRow = 0; $cellRow < $cellRows; $cellRow++) {
@@ -70,9 +69,7 @@ final class BrailleSampler extends AbstractSampler
                 $rowHasDot = $rowHasDot || $bits !== 0;
             }
 
-            $output .= $rowHasDot
-                ? $foregroundSgr.$cellsString.self::RESET_SGR."\n"
-                : $cellsString."\n";
+            $output .= $this->wrapRow($cellsString, $rowHasDot, $options);
         }
 
         return $output;

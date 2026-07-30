@@ -19,6 +19,7 @@ use Wazum\Stipple\Stipple;
 final class StippleCommand
 {
     private const VALUE_OPTIONS = ['height', 'color', 'accent', 'threshold', 'sampler', 'ink'];
+    private const FLAG_OPTIONS = ['plain'];
 
     public function usage(): string
     {
@@ -36,6 +37,7 @@ final class StippleCommand
               --accent=#rrggbb  replaces var(--icon-color-accent, …) in the SVG
               --threshold=F     cutoff in 0.0..1.0 (default 0.5)
               --ink=NAME        coverage (default) or luminance
+              --plain           write no colour codes, for a file or a pipe
               -h, --help        this text
 
             Examples:
@@ -55,6 +57,7 @@ final class StippleCommand
     {
         $source = null;
         $options = [];
+        $flags = [];
 
         for ($index = 0, $count = count($arguments); $index < $count; $index++) {
             $argument = $arguments[$index];
@@ -71,6 +74,14 @@ final class StippleCommand
             $value = null;
             if (str_contains($name, '=')) {
                 [$name, $value] = explode('=', $name, 2);
+            }
+
+            if (in_array($name, self::FLAG_OPTIONS, true)) {
+                if ($value !== null) {
+                    throw new InvalidArgumentException(sprintf('Option --%s takes no value.', $name));
+                }
+                $flags[$name] = true;
+                continue;
             }
 
             if (!in_array($name, self::VALUE_OPTIONS, true)) {
@@ -105,6 +116,10 @@ final class StippleCommand
                 'sampler' => $stipple->sampler($this->sampler($value)),
                 'ink' => $stipple->inkMode($this->inkMode($value)),
             };
+        }
+
+        if (isset($flags['plain'])) {
+            $stipple = $stipple->decorated(false);
         }
 
         return $stipple->toString();

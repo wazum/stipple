@@ -27,6 +27,7 @@ final readonly class SamplerOptions
         ?string $foregroundHex = null,
         public float $threshold = 0.5,
         public InkMode $inkMode = InkMode::Coverage,
+        public bool $decorated = true,
     ) {
         if ($foregroundHex !== null && preg_match(self::HEX_PATTERN, $foregroundHex) !== 1) {
             throw new InvalidArgumentException(sprintf(
@@ -51,16 +52,25 @@ final readonly class SamplerOptions
 
     public function withForegroundHex(?string $foregroundHex): self
     {
-        return new self($foregroundHex, $this->threshold, $this->inkMode);
+        return new self($foregroundHex, $this->threshold, $this->inkMode, $this->decorated);
     }
 
     public function withThreshold(float $threshold): self
     {
-        return new self($this->foregroundHex, $threshold, $this->inkMode);
+        return new self($this->foregroundHex, $threshold, $this->inkMode, $this->decorated);
     }
 
     public function withInkMode(InkMode $inkMode): self
     {
-        return new self($this->foregroundHex, $this->threshold, $inkMode);
+        return new self($this->foregroundHex, $this->threshold, $inkMode, $this->decorated);
+    }
+
+    /**
+     * When false no colour codes are written at all, for a log file, a pipe, or a caller that
+     * applies its own colours.
+     */
+    public function withDecorated(bool $decorated): self
+    {
+        return new self($this->foregroundHex, $this->threshold, $this->inkMode, $decorated);
     }
 }

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file. The format 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-07-30
+
+### Added
+
+- `Stipple::decorated(false)` and `SamplerOptions::withDecorated()` write no colour codes at all.
+  Symfony Console strips its own `<info>` tags when output is not decorated, but not escape codes
+  coming from elsewhere, so piping to a file or running with `--no-ansi` used to leave raw escapes
+  in the result. Pass `->decorated($output->isDecorated())`. The `stipple` command gained `--plain`
+  for the same purpose.
+- `AbstractSampler::wrapRow()` ends a row, adding colour codes only when the row has ink and output
+  is decorated. Custom samplers should use it instead of `buildForegroundSgr()` directly.
+
+### Documentation
+
+- A "Using it with a framework" section for Symfony Console, Laravel Prompts and Symfony TUI. No
+  bridge package is needed; all three take a plain string.
+- The package description mentions Symfony TUI.
+
 ## [1.0.0] - 2026-07-30
 
 First stable release. The public API is now covered by semantic versioning; see
@@ -151,5 +169,6 @@ First stable release. The public API is now covered by semantic versioning; see
   `LIBXML_NONET`, rejection of `<script>`, `<foreignObject>`, and all `<image>` elements,
   `currentColor` and `var(--icon-color-accent, …)` substitution.
 
+[1.1.0]: https://github.com/wazum/stipple/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/wazum/stipple/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/wazum/stipple/releases/tag/v0.1.0

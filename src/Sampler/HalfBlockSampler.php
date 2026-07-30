@@ -37,7 +37,6 @@ final class HalfBlockSampler extends AbstractSampler
         $heightPx = imagesy($image);
 
         $cellRows = (int) ceil($heightPx / self::PIXELS_PER_CELL_Y);
-        $foregroundSgr = $this->buildForegroundSgr($options->foregroundHex);
 
         $output = '';
         for ($cellRow = 0; $cellRow < $cellRows; $cellRow++) {
@@ -63,9 +62,7 @@ final class HalfBlockSampler extends AbstractSampler
                 $cellsString .= $character;
             }
 
-            $output .= $hasNonBlank
-                ? $foregroundSgr.$cellsString.self::RESET_SGR."\n"
-                : $cellsString."\n";
+            $output .= $this->wrapRow($cellsString, $hasNonBlank, $options);
         }
 
         return $output;

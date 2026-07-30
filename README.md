@@ -9,9 +9,10 @@
 Render small SVG icons as monochrome ANSI in the terminal — pure PHP, zero system dependencies.
 
 Use it in any PHP command line tool that wants real icons next to its menu items. The result is a
-plain string, so `echo`, [Symfony TUI](https://github.com/symfony/tui), Symfony Console and Laravel
-Prompts all work. Two samplers are included: Braille for more detail, half-block for wider terminal
-support.
+plain string, so `echo`, [Symfony TUI](https://github.com/symfony/tui),
+[Symfony Console](https://github.com/symfony/console) and
+[Laravel Prompts](https://github.com/laravel/prompts) all work. Two samplers are included: Braille
+for more detail, half-block for wider terminal support.
 
 ## Preview
 
@@ -129,7 +130,7 @@ composer require wazum/stipple
 
 Needs PHP 8.2 or newer with `ext-gd`, `ext-mbstring`, `ext-dom`, `ext-libxml` and `ext-simplexml`.
 No extra programs to install: the drawing is done in PHP by
-[`meyfa/php-svg`](https://github.com/meyfa/php-svg).
+[meyfa/php-svg](https://github.com/meyfa/php-svg).
 
 ## Try it on your own icon
 
@@ -140,6 +141,7 @@ any code:
 vendor/bin/stipple path/to/icon.svg
 vendor/bin/stipple path/to/icon.svg --height=4 --sampler=half-block
 vendor/bin/stipple path/to/logo.svg --color=#00ffff --ink=luminance
+vendor/bin/stipple path/to/icon.svg --plain > icon.txt
 cat icon.svg | vendor/bin/stipple -
 ```
 
@@ -163,6 +165,7 @@ echo Stipple::make('/path/to/icon.svg')
     ->accent('#ff8700')        // overrides the fallback in any var(--icon-color-accent, …) call in the SVG
     ->threshold(0.5)           // cutoff in [0.0, 1.0] for whatever the ink mode measures
     ->inkMode(InkMode::Coverage) // Coverage (default) or Luminance — see below
+    ->decorated(true)          // false writes no colour codes, for a file or a pipe
     ->maxRasterDimension(2048) // safety cap on the intermediate raster (default 4096 px)
     ->toString();
 
@@ -170,13 +173,35 @@ echo Stipple::make('/path/to/icon.svg')
 echo (string) Stipple::make('/path/to/icon.svg')->height(4);
 ```
 
-Every row ends with `\n`. You can `echo` the string or pass it to Laravel Prompts' `note()`.
+Every row ends with `\n`.
 
-For [Symfony TUI](https://github.com/symfony/tui) put the rows in a `TextWidget`. Its layout counts
-visible columns and ignores colour codes, so the rows keep their width. Note that Symfony TUI needs
-PHP 8.4 and is still marked experimental; stipple itself stays on PHP 8.2. If your terminal supports
-the Kitty graphics protocol, Symfony TUI can also show the SVG as a real image with its
-`ImageWidget` — stipple is for the terminals that cannot do that.
+## Using it with a framework
+
+No bridge package is needed. All of these take a plain string.
+
+**[Symfony Console](https://github.com/symfony/console)** — pass `isDecorated()`, so a pipe or
+`--no-ansi` gets clean text. Console removes its own `<info>` tags in that case, but not colour codes
+from somewhere else, so without this you would find escape codes in your log file:
+
+```php
+$output->write(
+    Stipple::make($path)->height(4)->decorated($output->isDecorated())->toString()
+);
+```
+
+**[Laravel Prompts](https://github.com/laravel/prompts)** — `note()` takes the string as it is:
+
+```php
+note(Stipple::make($path)->height(4)->toString());
+```
+
+**[Symfony TUI](https://github.com/symfony/tui)** — put the rows in a `TextWidget`. Its layout counts
+visible columns and ignores colour codes, so the rows keep their width.
+
+Two things to know about Symfony TUI: it needs PHP 8.4 and is still marked experimental, while
+stipple stays on PHP 8.2. And if your terminal speaks the Kitty graphics protocol, Symfony TUI can
+show the SVG as a real image with its own `ImageWidget`, which always looks better. stipple is for
+the terminals that cannot do that.
 
 ## Icons side by side
 

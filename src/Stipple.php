@@ -139,6 +139,18 @@ final class Stipple
     }
 
     /**
+     * Pass false to write no colour codes, for a log file, a pipe, or a caller that colours the
+     * output itself. With Symfony Console: ->decorated($output->isDecorated()).
+     */
+    public function decorated(bool $decorated): self
+    {
+        $clone = clone $this;
+        $clone->samplerOptions = $this->samplerOptions->withDecorated($decorated);
+
+        return $clone;
+    }
+
+    /**
      * Replaces every sampler setting at once; the individual withers are additive.
      */
     public function samplerOptions(SamplerOptions $options): self
