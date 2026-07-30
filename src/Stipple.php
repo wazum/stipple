@@ -40,8 +40,16 @@ final class Stipple
         return self::makeFromString($svg)->toString();
     }
 
+    /**
+     * Local filesystem paths only. Stream wrappers (http://, data://, …) are refused because
+     * allow_url_fopen is on by default; fetch such SVG yourself and use makeFromString().
+     */
     public static function make(string $path): self
     {
+        if (!is_file($path)) {
+            throw new InvalidArgumentException(sprintf('Not a readable local file: %s', $path));
+        }
+
         $svg = @file_get_contents($path);
         if ($svg === false) {
             throw new InvalidArgumentException(sprintf('Cannot read SVG from path: %s', $path));

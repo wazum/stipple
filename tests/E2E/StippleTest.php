@@ -176,6 +176,23 @@ final class StippleTest extends TestCase
     }
 
     #[Test]
+    public function streamWrapperPathIsRejected(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">'
+            .'<rect width="2" height="2" fill="#ffffff"/></svg>';
+
+        $this->expectException(InvalidArgumentException::class);
+        Stipple::make('data://text/plain;base64,'.base64_encode($svg));
+    }
+
+    #[Test]
+    public function directoryPathIsRejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        Stipple::make(__DIR__);
+    }
+
+    #[Test]
     public function emptyFileThrowsStippleException(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'stipple');
