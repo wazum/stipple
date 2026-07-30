@@ -79,6 +79,7 @@ final class SvgPreprocessor
             // Before the colour and path passes, so inlined content is processed like any other.
             $this->unwrapSwitches($document);
             $this->resolveUseReferences($document);
+            $this->resolveClipsAndMasks($document);
             $this->applyColorSubstitutions($document, $accent);
             $this->normalisePathData($document);
 
@@ -298,6 +299,136 @@ final class SvgPreprocessor
         }
 
         return null;
+    }
+
+    /**
+     * The rasterizer ignores clip-path and mask, drawing clipped content in full. A clip that
+     * covers the whole viewBox changes nothing and is dropped — that is what Figma and
+     * Illustrator wrap their exports in. Anything that would actually alter the picture is
+     * refused, because drawing it unclipped turns the icon into a filled block instead.
+     */
+    private function resolveClipsAndMasks(\DOMDocument $document): void
+    {
+        $viewBox = $this->rootViewBoxRect($document);
+
+        foreach (iterator_to_array($document->getElementsByTagName('*')) as $element) {
+            $mask = trim($element->getAttribute('mask'));
+            if ($mask !== '' && strcasecmp($mask, 'none') !== 0) {
+                throw new InvalidSvgException(
+                    'SVG uses mask, which cannot be rendered; flatten the artwork first.',
+                );
+            }
+
+            $clip = trim($element->getAttribute('clip-path'));
+            if ($clip === '' || strcasecmp($clip, 'none') === 0) {
+                continue;
+            }
+
+            if (preg_match('/^url\(\s*#([^)\s]+)\s*\)$/i', $clip, $matches) !== 1) {
+                throw new InvalidSvgException(sprintf('SVG has an unsupported clip-path value "%s".', $clip));
+            }
+
+            $clipPath = $this->findById($document, $matches[1]);
+            if ($clipPath === null || $clipPath->localName !== 'clipPath') {
+                throw new InvalidSvgException(sprintf(
+                    'SVG clip-path references "#%s", which is not a <clipPath>.',
+                    $matches[1],
+                ));
+            }
+
+            if (!$this->clipCoversRect($clipPath, $viewBox)) {
+                throw new InvalidSvgException(
+                    'SVG uses a clip-path that actually clips, which cannot be rendered; '
+                    .'flatten the artwork first.',
+                );
+            }
+
+            $element->removeAttribute('clip-path');
+        }
+    }
+
+    /**
+     * @param array{float, float, float, float}|null $viewBox
+     */
+    private function clipCoversRect(\DOMElement $clipPath, ?array $viewBox): bool
+    {
+        if ($viewBox === null || $clipPath->hasAttribute('transform')) {
+            return false;
+        }
+        if ($clipPath->hasAttribute('clipPathUnits')
+            && strcasecmp($clipPath->getAttribute('clipPathUnits'), 'userSpaceOnUse') !== 0) {
+            return false;
+        }
+
+        $children = [];
+        foreach ($clipPath->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                $children[] = $child;
+            }
+        }
+        if (count($children) !== 1) {
+            return false;
+        }
+
+        $rect = $children[0];
+        if ($rect->localName !== 'rect'
+            || $rect->hasAttribute('transform')
+            || $rect->hasAttribute('rx')
+            || $rect->hasAttribute('ry')) {
+            return false;
+        }
+
+        $x = $this->parseStrictFloat(trim($rect->getAttribute('x')) ?: '0');
+        $y = $this->parseStrictFloat(trim($rect->getAttribute('y')) ?: '0');
+        $width = $this->parseStrictFloat(trim($rect->getAttribute('width')));
+        $height = $this->parseStrictFloat(trim($rect->getAttribute('height')));
+        if ($x === null || $y === null || $width === null || $height === null) {
+            return false;
+        }
+
+        [$viewX, $viewY, $viewWidth, $viewHeight] = $viewBox;
+
+        return $x <= $viewX
+            && $y <= $viewY
+            && $x + $width >= $viewX + $viewWidth
+            && $y + $height >= $viewY + $viewHeight;
+    }
+
+    /**
+     * @return array{float, float, float, float}|null
+     */
+    private function rootViewBoxRect(\DOMDocument $document): ?array
+    {
+        $root = $document->documentElement;
+        if ($root === null) {
+            return null;
+        }
+
+        $viewBox = trim($root->getAttribute('viewBox'));
+        if ($viewBox !== '') {
+            $parts = array_values(array_filter(
+                preg_split('/[\s,]+/', $viewBox) ?: [],
+                static fn (string $part): bool => $part !== '',
+            ));
+            if (count($parts) !== 4) {
+                return null;
+            }
+            $numbers = [];
+            foreach ($parts as $part) {
+                $number = $this->parseStrictFloat($part);
+                if ($number === null) {
+                    return null;
+                }
+                $numbers[] = $number;
+            }
+
+            return [$numbers[0], $numbers[1], $numbers[2], $numbers[3]];
+        }
+
+        $width = $this->parseRootLength(trim($root->getAttribute('width')));
+        $height = $this->parseRootLength(trim($root->getAttribute('height')));
+
+        return $width === null || $height === null ? null : [0.0, 0.0, $width, $height];
     }
 
     /**

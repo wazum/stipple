@@ -503,14 +503,14 @@ final class SvgPreprocessorTest extends TestCase
     #[Test]
     public function nonPaintUrlReferencesAreLeftAlone(): void
     {
-        // clip-path/mask are not paint, so they must not be rewritten to a colour.
+        // A url() outside fill/stroke is not paint, so it must not be rewritten to a colour.
         $result = $this->preprocessor->clean(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
-            .'<rect width="16" height="16" fill="#ffffff" clip-path="url(#c)"/></svg>',
+            .'<rect width="16" height="16" fill="#ffffff" filter="url(#f)"/></svg>',
             null,
         );
 
-        self::assertStringContainsString('clip-path="url(#c)"', $result->svg);
+        self::assertStringContainsString('filter="url(#f)"', $result->svg);
     }
 
     // ---------- accent var() ----------

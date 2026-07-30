@@ -274,9 +274,30 @@ Anything not in the above list is passed through to the rasterizer untouched.
 
 - `fill="url(#gradient)"` / `fill="url(#pattern)"` — paint-server references are flattened to solid foreground, since a gradient carries no information in monochrome and `meyfa/php-svg` would otherwise render nothing at all. An SVG 2 fallback paint after the reference wins, so `fill="url(#g) #ff8700"` uses the accent and `fill="url(#g) none"` stays invisible.
 
+- `<use href="#id">` / `<use xlink:href="#id">` — inlined, including references to `<symbol>` and
+  nested `<use>`, with `x`/`y` applied as a translate. This is how sprite-sheet icon sets are
+  distributed. External references (`sprite.svg#id`) are refused rather than fetched.
+- `<switch>` — replaced by its first viable child, which is what Illustrator's SVG 1.1 export wraps
+  content in.
+- Minified path data — arc flags written without separators (`a8 8 0 11-16 0`) and uppercase
+  exponents are normalised. The rasterizer's tokeniser misreads both and silently discards the rest
+  of the path, so icons from minified sets rendered as fragments.
+- `clip-path` covering the whole viewBox — dropped, since it changes nothing. Figma and Illustrator
+  wrap exports in exactly this.
+
 ### Not supported
 
+These are **refused with an exception** rather than rendered incorrectly:
+
+- **`clip-path` that actually clips**, and **`mask`** — the rasterizer ignores both, so the content
+  would be drawn unclipped and an icon would silently become a filled block. Flatten first.
+- **`<text>` / `<tspan>`** — no font is registered, so text would render as nothing.
+
+These render, but not as a browser would:
+
 - **`<style>` type selectors** (`rect { fill: … }`) are not applied by the rasterizer; class selectors are.
+- **`stroke-dasharray`** renders solid.
+- **`filter`** is ignored.
 - **Embedded raster** (`<image>`) is rejected outright — see [Security](#security).
 
 ## Development
