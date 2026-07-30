@@ -1,5 +1,11 @@
 # stipple
 
+[![Packagist Version](https://img.shields.io/packagist/v/wazum/stipple?logo=packagist&logoColor=white)](https://packagist.org/packages/wazum/stipple)
+[![PHP Version Support](https://img.shields.io/packagist/dependency-v/wazum/stipple/php?logo=php&logoColor=white)](https://packagist.org/packages/wazum/stipple)
+[![CI](https://img.shields.io/github/actions/workflow/status/wazum/stipple/ci.yml?branch=main&logo=githubactions&logoColor=white&label=CI)](https://github.com/wazum/stipple/actions/workflows/ci.yml)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen)](https://phpstan.org/)
+[![License](https://img.shields.io/packagist/l/wazum/stipple)](LICENSE)
+
 Render small SVG icons as monochrome ANSI in the terminal — pure PHP, zero system dependencies.
 
 Drop it into any PHP CLI tool that wants real icons next to its menu items. The output is a plain string ending in `\n` per row — works equally well with `echo`, Symfony Console, Laravel/Prompts, or whatever else writes to a TTY. Two pluggable samplers ship: Braille (default) for highest density and half-block as a more universal fallback.
