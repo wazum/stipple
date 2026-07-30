@@ -231,16 +231,29 @@ final class SvgPreprocessor
                 throw new InvalidSvgException('viewBox width and height must be positive finite numbers.');
             }
 
-            return $width / $height;
+            return $this->assertUsableRatio($width / $height);
         }
 
         $width = $this->parseRootLength(trim((string) $root->getAttribute('width')));
         $height = $this->parseRootLength(trim((string) $root->getAttribute('height')));
         if ($width !== null && $height !== null && $width > 0.0 && $height > 0.0) {
-            return $width / $height;
+            return $this->assertUsableRatio($width / $height);
         }
 
         throw new InvalidSvgException('SVG must declare either viewBox or numeric width/height.');
+    }
+
+    /**
+     * Two individually finite dimensions can still divide to INF or 0.0 at the extremes of
+     * the float range, which downstream degrades to a one-cell blank icon.
+     */
+    private function assertUsableRatio(float $ratio): float
+    {
+        if (!is_finite($ratio) || $ratio <= 0.0) {
+            throw new InvalidSvgException('SVG aspect ratio is not a usable positive number.');
+        }
+
+        return $ratio;
     }
 
     /**

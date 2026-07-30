@@ -254,6 +254,11 @@ final class SvgPreprocessorTest extends TestCase
         yield 'viewBox min-x is garbage' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="abc 0 16 16"/>'];
         yield 'viewBox min-y is garbage' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 def 16 16"/>'];
         yield 'viewBox min-x overflow' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="1e309 0 16 16"/>'];
+        // Each component is finite on its own, but the quotient overflows or collapses.
+        yield 'viewBox ratio overflows' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1e308 1e-308"/>'];
+        yield 'viewBox ratio underflows' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1e-308 1e308"/>'];
+        yield 'width/height ratio overflows' => ['<svg xmlns="http://www.w3.org/2000/svg" width="1e308" height="1e-308"/>'];
+        yield 'width/height ratio underflows' => ['<svg xmlns="http://www.w3.org/2000/svg" width="1e-308" height="1e308"/>'];
     }
 
     // ---------- currentColor (fill) ----------
