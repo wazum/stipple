@@ -477,6 +477,29 @@ final class SvgPreprocessorTest extends TestCase
         self::assertStringContainsString('fill="none"', $result->svg);
     }
 
+    /**
+     * Chained paint fallbacks used to recurse once per reference, copying the remaining string
+     * each time, so a 48 KB document could exhaust a 128 MB limit with an uncatchable fatal.
+     */
+    #[Test]
+    public function chainedPaintReferencesDoNotExhaustMemory(): void
+    {
+        $fill = str_repeat('url(#a) ', 20000).'#ffffff';
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<rect width="16" height="16" fill="'.$fill.'"/></svg>';
+
+        $before = memory_get_usage(true);
+        $result = $this->preprocessor->clean($svg, null);
+        $growth = memory_get_usage(true) - $before;
+
+        self::assertStringNotContainsString('url(#', $result->svg);
+        self::assertLessThan(
+            32 * 1024 * 1024,
+            $growth,
+            sprintf('Resolving chained paint grew memory by %.1f MB.', $growth / 1048576),
+        );
+    }
+
     #[Test]
     public function nonPaintUrlReferencesAreLeftAlone(): void
     {

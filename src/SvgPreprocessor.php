@@ -13,7 +13,7 @@ final class SvgPreprocessor
 {
     private const CURRENT_COLOR_REPLACEMENT = '#ffffff';
     private const ACCENT_VAR_PATTERN = '/var\(\s*--icon-color-accent\s*(?:,\s*([^)]+))?\s*\)/i';
-    private const PAINT_SERVER_PATTERN = '/^url\([^)]*\)\s*(.*)$/i';
+    private const PAINT_SERVER_PATTERN = '/\Gurl\([^)]*\)\s*/i';
 
     /**
      * Absolute CSS lengths in px (1in = 96px). Normalising to a common base keeps a
@@ -178,12 +178,25 @@ final class SvgPreprocessor
             return self::CURRENT_COLOR_REPLACEMENT;
         }
 
-        if (preg_match(self::PAINT_SERVER_PATTERN, $trimmed, $matches) !== 1) {
+        // Walked with an offset rather than recursively on the tail: chained references used to
+        // copy the remainder per step, which is quadratic and exhausts memory on a small input.
+        $offset = 0;
+        $length = strlen($trimmed);
+        while ($offset < $length
+            && preg_match(self::PAINT_SERVER_PATTERN, $trimmed, $matches, 0, $offset) === 1
+        ) {
+            $offset += strlen($matches[0]);
+        }
+
+        if ($offset === 0) {
             return $value;
         }
-        $fallback = trim($matches[1]);
 
-        return $fallback === '' ? self::CURRENT_COLOR_REPLACEMENT : $this->resolvePaint($fallback);
+        $fallback = trim(substr($trimmed, $offset));
+
+        return $fallback === '' || strcasecmp($fallback, 'currentColor') === 0
+            ? self::CURRENT_COLOR_REPLACEMENT
+            : $fallback;
     }
 
     private function rewriteCurrentColorInStyle(string $style): string

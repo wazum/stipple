@@ -19,15 +19,7 @@ final class PhpSvgRasterizer implements RasterizerInterface
             ));
         }
 
-        // meyfa/php-svg leaks SimpleXML warnings on malformed input. Convert every
-        // non-fatal severity to an exception so callers get a single
-        // RasterizationFailedException instead of a warning-plus-failure pair
-        // noisy enough to fail PHPUnit's failOnWarning.
-        $errorMask = \E_WARNING | \E_NOTICE | \E_DEPRECATED
-            | \E_USER_WARNING | \E_USER_NOTICE | \E_USER_DEPRECATED;
-        set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
-            throw new \ErrorException($message, 0, $severity, $file, $line);
-        }, $errorMask);
+        $this->installDiagnosticHandler();
 
         try {
             $document = SVG::fromString($svg);
@@ -44,6 +36,11 @@ final class PhpSvgRasterizer implements RasterizerInterface
             throw new RasterizationFailedException('meyfa/php-svg returned a null document.');
         }
 
+        // The handler has to span rasterization too: php-svg emits E_DEPRECATED for the
+        // fractional coordinates that ordinary icons produce at most heights, and with
+        // display_errors on that text lands in the middle of the rendered frame.
+        $this->installDiagnosticHandler();
+
         try {
             /** @var \GdImage $image meyfa/php-svg still types this as resource (legacy GD); on PHP 8+ it is always GdImage. */
             $image = $document->toRasterImage($widthPx, $heightPx);
@@ -52,6 +49,8 @@ final class PhpSvgRasterizer implements RasterizerInterface
                 'meyfa/php-svg failed to rasterize: '.$cause->getMessage(),
                 previous: $cause,
             );
+        } finally {
+            restore_error_handler();
         }
 
         if (!$image instanceof \GdImage) {
@@ -64,5 +63,24 @@ final class PhpSvgRasterizer implements RasterizerInterface
         imagesavealpha($image, true);
 
         return $image;
+    }
+
+    /**
+     * Deprecations and notices from the dependency are noise the caller cannot act on, so they
+     * are dropped rather than printed into the output. Warnings mean something actually went
+     * wrong, so they become a RasterizationFailedException via the surrounding catch.
+     */
+    private function installDiagnosticHandler(): void
+    {
+        $mask = \E_WARNING | \E_NOTICE | \E_DEPRECATED
+            | \E_USER_WARNING | \E_USER_NOTICE | \E_USER_DEPRECATED;
+
+        set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+            if (($severity & (\E_DEPRECATED | \E_USER_DEPRECATED | \E_NOTICE | \E_USER_NOTICE)) !== 0) {
+                return true;
+            }
+
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        }, $mask);
     }
 }

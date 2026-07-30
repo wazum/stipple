@@ -20,7 +20,6 @@ First stable release. The public API is now covered by semantic versioning; see
   plus `widthCells`, `heightCells`, `blankCell`, `row()` and `blankRow()`. `row()` pads out-of-range
   rows with the sampler's blank cell so mixed heights and aspect ratios stay column-aligned.
   `toString()` is now `toIcon()` joined; its output is unchanged.
-
 - `currentColor` and `var(--icon-color-accent, …)` are now substituted inside `<style>` element
   CSS, not just inside `fill`/`stroke`/`style` attributes. Icons styled through a stylesheet
   previously rendered as blank rows with no error.
@@ -51,9 +50,6 @@ First stable release. The public API is now covered by semantic versioning; see
   `data://`, `php://`, …) now throw `InvalidArgumentException` instead of being read, so a
   caller-supplied path cannot trigger an outbound request under the default `allow_url_fopen`.
   Pass remote SVG to `makeFromString()` yourself.
-- **`SamplerInterface::sample()` validates `$foregroundHex`** and throws
-  `InvalidArgumentException` for anything that is not a 6-digit `#rrggbb`. It previously
-  emitted PHP deprecations from `hexdec()` and produced a wrong colour.
 - **Samplers require a true-colour image** and throw `InvalidArgumentException` for a palette
   image, which the packed-pixel read cannot interpret. `RasterizerInterface` already documented
   true-colour output; custom rasterizers returning a palette image must now convert.
@@ -64,6 +60,15 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Fixed
 
+- Rasterizer diagnostics no longer reach the caller. `meyfa/php-svg` emits `E_DEPRECATED` for the
+  fractional coordinates ordinary icons produce at most heights, and the error handler was
+  restored before rasterization ran — so with `display_errors` on, PHP diagnostic text was printed
+  into the middle of the rendered frame, and under a host error handler the same icon failed
+  outright. Deprecations and notices from the dependency are now dropped; warnings still surface
+  as `RasterizationFailedException`.
+- Chained `url(#…)` paint fallbacks no longer exhaust memory. Resolution recursed on the remaining
+  string, which is quadratic: a 48 KB document could exhaust a 128 MB limit with an uncatchable
+  fatal. It is now an offset walk.
 - Blank input (empty file, empty string, unreadable directory) raises `InvalidSvgException`
   instead of letting `DOMDocument::loadXML()`'s raw `ValueError` escape the `StippleException`
   contract.
