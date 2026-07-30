@@ -13,6 +13,7 @@ final class SvgPreprocessor
 {
     private const CURRENT_COLOR_REPLACEMENT = '#ffffff';
     private const ACCENT_VAR_PATTERN = '/var\(\s*--icon-color-accent\s*(?:,\s*([^)]+))?\s*\)/i';
+    private const PAINT_SERVER_PATTERN = '/^url\([^)]*\)\s*(.*)$/i';
 
     /**
      * Absolute CSS lengths in px (1in = 96px). Normalising to a common base keeps a
@@ -121,10 +122,7 @@ final class SvgPreprocessor
                     continue;
                 }
                 $original = $element->getAttribute($attribute);
-                $rewritten = $this->rewriteAccentVar($original, $accent);
-                if (strcasecmp(trim($rewritten), 'currentColor') === 0) {
-                    $rewritten = self::CURRENT_COLOR_REPLACEMENT;
-                }
+                $rewritten = $this->resolvePaint($this->rewriteAccentVar($original, $accent));
                 if ($rewritten !== $original) {
                     $element->setAttribute($attribute, $rewritten);
                 }
@@ -166,6 +164,28 @@ final class SvgPreprocessor
         return $result ?? $withAccent;
     }
 
+    /**
+     * Resolves a fill/stroke value the rasterizer cannot handle on its own: `currentColor`, and
+     * `url(#…)` paint servers, which meyfa/php-svg renders as nothing at all. An SVG 2 fallback
+     * paint after the reference wins; otherwise the shape becomes solid foreground, since a
+     * gradient carries no information in monochrome anyway.
+     */
+    private function resolvePaint(string $value): string
+    {
+        $trimmed = trim($value);
+
+        if (strcasecmp($trimmed, 'currentColor') === 0) {
+            return self::CURRENT_COLOR_REPLACEMENT;
+        }
+
+        if (preg_match(self::PAINT_SERVER_PATTERN, $trimmed, $matches) !== 1) {
+            return $value;
+        }
+        $fallback = trim($matches[1]);
+
+        return $fallback === '' ? self::CURRENT_COLOR_REPLACEMENT : $this->resolvePaint($fallback);
+    }
+
     private function rewriteCurrentColorInStyle(string $style): string
     {
         $declarations = array_filter(array_map('trim', explode(';', $style)), static fn (string $part): bool => $part !== '');
@@ -179,8 +199,8 @@ final class SvgPreprocessor
             $property = trim($property);
             $value = trim($value);
 
-            if (in_array(strtolower($property), ['fill', 'stroke'], true) && strcasecmp($value, 'currentColor') === 0) {
-                $rewritten[] = $property.': '.self::CURRENT_COLOR_REPLACEMENT;
+            if (in_array(strtolower($property), ['fill', 'stroke'], true)) {
+                $rewritten[] = $property.': '.$this->resolvePaint($value);
                 continue;
             }
             $rewritten[] = $property.': '.$value;

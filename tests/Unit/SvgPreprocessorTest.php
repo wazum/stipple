@@ -416,6 +416,80 @@ final class SvgPreprocessorTest extends TestCase
         self::assertStringContainsString('fill: #ffffff', $result->svg);
     }
 
+    // ---------- paint server references ----------
+
+    #[Test]
+    #[DataProvider('paintServerProvider')]
+    public function paintServerReferenceIsFlattenedToTheForeground(string $svg): void
+    {
+        // meyfa/php-svg does not resolve url(#…) paint servers and renders nothing at all,
+        // so a gradient- or pattern-filled icon would come out blank with no error.
+        $result = $this->preprocessor->clean($svg, null);
+
+        self::assertStringNotContainsString('url(#', $result->svg);
+        self::assertStringContainsString('#ffffff', $result->svg);
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function paintServerProvider(): iterable
+    {
+        $gradient = '<linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient>';
+
+        yield 'fill attribute' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .$gradient.'<rect width="16" height="16" fill="url(#g)"/></svg>'];
+        yield 'stroke attribute' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .$gradient.'<path d="M0 0L16 16" stroke="url(#g)"/></svg>'];
+        yield 'style attribute' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .$gradient.'<rect width="16" height="16" style="fill: url(#g)"/></svg>'];
+        yield 'style element' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<style>.a { fill: url(#g) }</style>'.$gradient.'<rect class="a" width="16" height="16"/></svg>'];
+        yield 'inherited from group' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .$gradient.'<g fill="url(#g)"><rect width="16" height="16"/></g></svg>'];
+        yield 'pattern' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<pattern id="p" width="2" height="2"><rect width="1" height="1" fill="#fff"/></pattern>'
+            .'<rect width="16" height="16" fill="url(#p)"/></svg>'];
+    }
+
+    #[Test]
+    public function paintServerFallbackColourIsPreferredOverTheForeground(): void
+    {
+        // SVG 2 allows a fallback paint after the reference; honour it rather than override it.
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<rect width="16" height="16" fill="url(#g) #ff8700"/></svg>',
+            null,
+        );
+
+        self::assertStringContainsString('fill="#ff8700"', $result->svg);
+    }
+
+    #[Test]
+    public function paintServerFallbackNoneStaysInvisible(): void
+    {
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<rect width="16" height="16" fill="url(#g) none"/></svg>',
+            null,
+        );
+
+        self::assertStringContainsString('fill="none"', $result->svg);
+    }
+
+    #[Test]
+    public function nonPaintUrlReferencesAreLeftAlone(): void
+    {
+        // clip-path/mask are not paint, so they must not be rewritten to a colour.
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<rect width="16" height="16" fill="#ffffff" clip-path="url(#c)"/></svg>',
+            null,
+        );
+
+        self::assertStringContainsString('clip-path="url(#c)"', $result->svg);
+    }
+
     // ---------- accent var() ----------
 
     #[Test]

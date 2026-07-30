@@ -224,6 +224,22 @@ final class StippleTest extends TestCase
     }
 
     #[Test]
+    public function gradientFilledIconRendersInsteadOfBlank(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4">'
+            .'<linearGradient id="g"><stop offset="0" stop-color="#ff0000"/>'
+            .'<stop offset="1" stop-color="#00ff00"/></linearGradient>'
+            .'<rect x="0" y="0" width="4" height="4" fill="url(#g)"/></svg>';
+
+        $output = Stipple::makeFromString($svg)
+            ->height(2)
+            ->sampler(new HalfBlockSampler())
+            ->toString();
+
+        self::assertSame("\e[39m████\e[0m\n\e[39m████\e[0m\n", $output);
+    }
+
+    #[Test]
     public function pxDimensionedSvgWithoutViewBoxRenders(): void
     {
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="4px" height="4px">'

@@ -19,6 +19,9 @@ First stable release. The public API is now covered by semantic versioning; see
 - `currentColor` and `var(--icon-color-accent, …)` are now substituted inside `<style>` element
   CSS, not just inside `fill`/`stroke`/`style` attributes. Icons styled through a stylesheet
   previously rendered as blank rows with no error.
+- `url(#…)` paint-server references in `fill`/`stroke` are flattened to solid foreground, honouring
+  an SVG 2 fallback paint when present. Gradient- and pattern-filled icons previously rendered as
+  blank rows with no error, because `meyfa/php-svg` does not resolve paint servers.
 - Root `width`/`height` may carry an absolute CSS unit (`px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`),
   normalised to px. `width="16px"` is common in the wild and was previously refused outright.
 
@@ -61,8 +64,6 @@ First stable release. The public API is now covered by semantic versioning; see
 
 - Added Packagist, PHP version, CI, PHPStan and license badges.
 - Documented the supported public API surface.
-- Documented that gradient- and pattern-filled icons (`fill="url(#…)"`) render blank, a
-  `meyfa/php-svg` limitation.
 
 ### Internal
 

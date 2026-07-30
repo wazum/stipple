@@ -236,9 +236,10 @@ The preprocessor handles common patterns found in icon SVGs from any source:
 
 Anything not in the above list is passed through to the rasterizer untouched.
 
+- `fill="url(#gradient)"` / `fill="url(#pattern)"` — paint-server references are flattened to solid foreground, since a gradient carries no information in monochrome and `meyfa/php-svg` would otherwise render nothing at all. An SVG 2 fallback paint after the reference wins, so `fill="url(#g) #ff8700"` uses the accent and `fill="url(#g) none"` stays invisible.
+
 ### Not supported
 
-- **Gradients render blank.** `fill="url(#someGradient)"` produces empty output — `meyfa/php-svg` does not resolve paint-server references, and stipple cannot detect it, so you get blank rows rather than an exception. Flatten gradient-filled icons to solid fills first.
 - **`<style>` type selectors** (`rect { fill: … }`) are not applied by the rasterizer; class selectors are.
 - **Embedded raster** (`<image>`) is rejected outright — see [Security](#security).
 
