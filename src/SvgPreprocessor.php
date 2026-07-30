@@ -15,6 +15,8 @@ final class SvgPreprocessor
     private const ACCENT_VAR_PATTERN = '/var\(\s*--icon-color-accent\s*(?:,\s*([^)]+))?\s*\)/i';
     private const PAINT_SERVER_PATTERN = '/\Gurl\([^)]*\)\s*/i';
 
+    private const MAX_USE_DEPTH = 8;
+
     /**
      * Arguments per path command, per the SVG path grammar.
      *
@@ -74,6 +76,9 @@ final class SvgPreprocessor
             }
 
             $this->rejectDisallowedElements($document);
+            // Before the colour and path passes, so inlined content is processed like any other.
+            $this->unwrapSwitches($document);
+            $this->resolveUseReferences($document);
             $this->applyColorSubstitutions($document, $accent);
             $this->normalisePathData($document);
 
@@ -160,6 +165,139 @@ final class SvgPreprocessor
                 $styleElement->textContent = $rewritten;
             }
         }
+    }
+
+    /**
+     * Replaces each <switch> with its first viable child. The rasterizer renders <switch> as
+     * nothing, and Illustrator's SVG 1.1 export wraps content in one.
+     */
+    private function unwrapSwitches(\DOMDocument $document): void
+    {
+        // Materialised because replacing nodes mutates the live list.
+        $switches = iterator_to_array($document->getElementsByTagName('switch'));
+
+        foreach ($switches as $switch) {
+            $chosen = null;
+            foreach ($switch->childNodes as $child) {
+                if (!$child instanceof \DOMElement) {
+                    continue;
+                }
+                if ($child->getAttribute('requiredExtensions') !== ''
+                    || $child->getAttribute('requiredFeatures') !== '') {
+                    continue;
+                }
+                $chosen = $child;
+                break;
+            }
+
+            $parent = $switch->parentNode;
+            if ($parent === null) {
+                continue;
+            }
+            if ($chosen === null) {
+                $parent->removeChild($switch);
+                continue;
+            }
+            $parent->replaceChild($chosen, $switch);
+        }
+    }
+
+    /**
+     * Inlines each <use> reference. The rasterizer renders <use> as nothing, which is how
+     * sprite-sheet icon sets are distributed, so they produced blank output.
+     */
+    private function resolveUseReferences(\DOMDocument $document): void
+    {
+        for ($pass = 0; $pass < self::MAX_USE_DEPTH; $pass++) {
+            $uses = iterator_to_array($document->getElementsByTagName('use'));
+            if ($uses === []) {
+                return;
+            }
+
+            foreach ($uses as $use) {
+                $this->inlineUse($document, $use);
+            }
+        }
+
+        if ($document->getElementsByTagName('use')->length > 0) {
+            throw new InvalidSvgException(
+                'SVG nests <use> references too deeply, or they reference each other in a cycle.',
+            );
+        }
+    }
+
+    private function inlineUse(\DOMDocument $document, \DOMElement $use): void
+    {
+        $href = $use->getAttribute('href');
+        if ($href === '') {
+            $href = $use->getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+        }
+        if (!str_starts_with($href, '#') || $href === '#') {
+            throw new InvalidSvgException(sprintf(
+                'SVG <use> must reference a local id; got "%s". External references are not fetched.',
+                $href,
+            ));
+        }
+
+        $referenced = $document->getElementById(substr($href, 1))
+            ?? $this->findById($document, substr($href, 1));
+        if ($referenced === null) {
+            throw new InvalidSvgException(sprintf('SVG <use> references "%s", which does not exist.', $href));
+        }
+        if ($referenced === $use || $referenced->contains($use)) {
+            throw new InvalidSvgException('SVG <use> references an element that contains it.');
+        }
+
+        // A <g> carries the use element's own presentation attributes plus its offset, which is
+        // how the spec says the referenced content inherits them.
+        $group = $document->createElementNS('http://www.w3.org/2000/svg', 'g');
+        foreach ($use->attributes as $attribute) {
+            if (!$attribute instanceof \DOMAttr) {
+                continue;
+            }
+            if (in_array($attribute->localName, ['href', 'x', 'y', 'width', 'height', 'id'], true)) {
+                continue;
+            }
+            $group->setAttribute($attribute->nodeName, $attribute->value);
+        }
+
+        $offsetX = $use->getAttribute('x');
+        $offsetY = $use->getAttribute('y');
+        if ($offsetX !== '' || $offsetY !== '') {
+            $group->setAttribute('transform', sprintf(
+                'translate(%s,%s)',
+                $offsetX === '' ? '0' : $offsetX,
+                $offsetY === '' ? '0' : $offsetY,
+            ));
+        }
+
+        $clone = $referenced->cloneNode(true);
+        if (!$clone instanceof \DOMElement) {
+            return;
+        }
+        $clone->removeAttribute('id');
+
+        // <symbol> is never drawn where it is defined, so its children become the group's.
+        if ($clone->localName === 'symbol' || $clone->localName === 'svg') {
+            foreach (iterator_to_array($clone->childNodes) as $child) {
+                $group->appendChild($child);
+            }
+        } else {
+            $group->appendChild($clone);
+        }
+
+        $use->parentNode?->replaceChild($group, $use);
+    }
+
+    private function findById(\DOMDocument $document, string $id): ?\DOMElement
+    {
+        foreach ($document->getElementsByTagName('*') as $element) {
+            if ($element->getAttribute('id') === $id) {
+                return $element;
+            }
+        }
+
+        return null;
     }
 
     /**
