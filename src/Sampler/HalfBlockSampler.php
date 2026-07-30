@@ -26,6 +26,8 @@ final class HalfBlockSampler extends AbstractSampler
 
     public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string
     {
+        $this->assertTrueColorImage($image);
+
         $widthPx = imagesx($image);
         $heightPx = imagesy($image);
 

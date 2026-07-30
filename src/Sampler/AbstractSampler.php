@@ -19,6 +19,18 @@ abstract class AbstractSampler implements SamplerInterface
     abstract public function sample(\GdImage $image, ?string $foregroundHex, float $threshold): string;
 
     /**
+     * Call once per sample(), never per pixel: pixelOn() assumes packed true-colour ints.
+     */
+    final protected function assertTrueColorImage(\GdImage $image): void
+    {
+        if (!imageistruecolor($image)) {
+            throw new InvalidArgumentException(
+                'Sampling requires a true-colour image; got a palette image.',
+            );
+        }
+    }
+
+    /**
      * Alpha-weighted Rec. 601 luminance, gated by $threshold. Both samplers use the
      * same rule: a pixel is "on" only if the visible luminance (luma × opacity)
      * is strictly positive AND meets the threshold.
@@ -35,14 +47,18 @@ abstract class AbstractSampler implements SamplerInterface
             return false;
         }
 
-        $colorIndex = imagecolorat($image, $x, $y);
-        if ($colorIndex === false) {
+        $rgba = imagecolorat($image, $x, $y);
+        if ($rgba === false) {
             return false;
         }
 
-        $components = imagecolorsforindex($image, $colorIndex);
-        $luminance = (0.299 * $components['red'] + 0.587 * $components['green'] + 0.114 * $components['blue']) / 255.0;
-        $opacity = 1.0 - ($components['alpha'] / 127.0);
+        // Hand-unpacking 0xAARRGGBB avoids an imagecolorsforindex() array per pixel.
+        $luminance = (
+            0.299 * (($rgba >> 16) & 0xFF)
+            + 0.587 * (($rgba >> 8) & 0xFF)
+            + 0.114 * ($rgba & 0xFF)
+        ) / 255.0;
+        $opacity = 1.0 - ((($rgba >> 24) & 0x7F) / 127.0);
         $weight = $luminance * $opacity;
 
         return $weight > 0.0 && $weight >= $threshold;

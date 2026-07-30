@@ -57,6 +57,40 @@ final class HalfBlockSamplerTest extends TestCase
         self::assertSame("\e[38;2;0;255;255m█\e[0m\n", (new HalfBlockSampler())->sample($image, '#00ffff', 0.5));
     }
 
+    /**
+     * Every other sampler test uses greyscale, where a swapped channel or a misread alpha
+     * byte would go unnoticed. Columns: opaque red (luma 0.299), green (0.587),
+     * blue (0.114), half-transparent green (0.587 x 0.504 = 0.296).
+     */
+    #[Test]
+    public function asymmetricChannelsAreWeightedPerRec601(): void
+    {
+        $pixels = [];
+        foreach ([[255, 0, 0, self::OPAQUE], [0, 255, 0, self::OPAQUE], [0, 0, 255, self::OPAQUE], [0, 255, 0, 63]] as $column => $rgba) {
+            $pixels[] = [$column, 0, $rgba];
+            $pixels[] = [$column, 1, $rgba];
+        }
+
+        $sampler = new HalfBlockSampler();
+
+        // Blue alone falls below 0.2; at 0.35 only green survives.
+        self::assertSame("\e[39m██ █\e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), null, 0.2));
+        self::assertSame("\e[39m █  \e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), null, 0.35));
+    }
+
+    #[Test]
+    public function paletteImageIsRejected(): void
+    {
+        // imagecolorat() returns a palette index here, not packed ARGB, so sampling it
+        // would silently mis-read every pixel.
+        $image = imagecreate(2, 2);
+        self::assertNotFalse($image);
+        imagecolorallocate($image, 255, 255, 255);
+
+        $this->expectException(InvalidArgumentException::class);
+        (new HalfBlockSampler())->sample($image, null, 0.5);
+    }
+
     #[Test]
     #[DataProvider('malformedForegroundHexProvider')]
     public function malformedForegroundHexIsRejected(string $hex): void
