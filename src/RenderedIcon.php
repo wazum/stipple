@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple;
 
+use Wazum\Stipple\Exception\InvalidArgumentException;
+
 final readonly class RenderedIcon implements \Stringable
 {
     /**
@@ -16,6 +18,23 @@ final readonly class RenderedIcon implements \Stringable
         public int $heightCells,
         public string $blankCell,
     ) {
+        if ($widthCells < 0 || $heightCells < 0) {
+            throw new InvalidArgumentException(sprintf(
+                'Cell dimensions cannot be negative; got %dx%d.',
+                $widthCells,
+                $heightCells,
+            ));
+        }
+        if (count($rows) !== $heightCells) {
+            throw new InvalidArgumentException(sprintf(
+                'heightCells is %d but %d rows were given; callers rely on those agreeing.',
+                $heightCells,
+                count($rows),
+            ));
+        }
+        if ($blankCell === '') {
+            throw new InvalidArgumentException('The blank cell glyph cannot be empty.');
+        }
     }
 
     /**

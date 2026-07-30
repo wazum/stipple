@@ -194,6 +194,50 @@ final class StippleTest extends TestCase
         $instance->toString();
     }
 
+    /**
+     * A finite but enormous ratio overflows the int cast, which max(1, …) then launders into a
+     * plausible-looking one-cell icon instead of hitting the raster cap.
+     */
+    #[Test]
+    #[DataProvider('hugeAspectRatioProvider')]
+    public function finiteButEnormousAspectRatioIsRejected(string $viewBox): void
+    {
+        $instance = Stipple::makeFromString(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'.$viewBox.'">'
+            .'<rect width="9" height="9" fill="#ffffff"/></svg>',
+        )->height(256);
+
+        try {
+            $instance->toString();
+            self::fail('Expected the raster cap to reject this.');
+        } catch (InvalidArgumentException $exception) {
+            // A negative width would mean the int cast overflowed rather than being range-checked.
+            self::assertDoesNotMatchRegularExpression('/-\d/', $exception->getMessage());
+            self::assertLessThan(200, strlen($exception->getMessage()), 'Message should stay readable.');
+        }
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function hugeAspectRatioProvider(): iterable
+    {
+        yield 'ratio 1e17' => ['0 0 1e17 1'];
+        yield 'ratio 1e18' => ['0 0 1e18 1'];
+        yield 'ratio 1e300' => ['0 0 1e300 1'];
+    }
+
+    #[Test]
+    public function extremelyThinAspectRatioClampsToOneCell(): void
+    {
+        // The other direction does not overflow: a genuinely thin icon is one cell wide.
+        $icon = Stipple::makeFromString(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1e300"/>',
+        )->height(2)->toIcon();
+
+        self::assertSame(1, $icon->widthCells);
+    }
+
     #[Test]
     public function lowerCustomMaxRasterDimensionTriggersEarlierRejection(): void
     {

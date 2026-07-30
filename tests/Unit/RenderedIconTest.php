@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Wazum\Stipple\Exception\InvalidArgumentException;
 use Wazum\Stipple\RenderedIcon;
 
 final class RenderedIconTest extends TestCase
@@ -45,6 +47,33 @@ final class RenderedIconTest extends TestCase
 
         self::assertSame('ab', $icon->row(0));
         self::assertSame('cd', $icon->row(1));
+    }
+
+    /**
+     * @param list<string> $rows
+     */
+    #[Test]
+    #[DataProvider('inconsistentConstructionProvider')]
+    public function inconsistentConstructionIsRejected(
+        array $rows,
+        int $widthCells,
+        int $heightCells,
+        string $blankCell,
+    ): void {
+        $this->expectException(InvalidArgumentException::class);
+        new RenderedIcon($rows, $widthCells, $heightCells, $blankCell);
+    }
+
+    /**
+     * @return iterable<string, array{0: list<string>, 1: int, 2: int, 3: string}>
+     */
+    public static function inconsistentConstructionProvider(): iterable
+    {
+        yield 'negative widthCells' => [['ab'], -1, 1, ' '];
+        yield 'negative heightCells' => [['ab'], 2, -1, ' '];
+        yield 'heightCells disagrees with rows' => [['a', 'b', 'c'], 2, 99, ' '];
+        yield 'no rows but a positive heightCells' => [[], 3, 2, ' '];
+        yield 'empty blank cell' => [['ab'], 2, 1, ''];
     }
 
     #[Test]

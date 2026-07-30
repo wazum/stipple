@@ -106,6 +106,13 @@ First stable release. The public API is now covered by semantic versioning; see
   contract.
 - `threshold(NAN)` is rejected. `NAN` compares false against both range bounds, so it was
   accepted and then turned every pixel off.
+- `RenderedIcon`'s constructor enforces its documented invariants — non-negative dimensions, a
+  non-empty blank cell, and `heightCells` matching the row count — instead of letting a raw
+  `ValueError` escape from `blankRow()`. This also turns a rasterizer that returns dimensions other
+  than the ones requested from a silent contract violation into an exception.
+- A finite but enormous aspect ratio is rejected rather than rendering a one-cell icon. The raster
+  cap is now checked in float space, because casting an out-of-range value to int is undefined and
+  `max(1, …)` laundered the result into something plausible-looking.
 - Aspect ratios that overflow or collapse are rejected. Two individually finite dimensions can
   still divide to `INF` or `0.0` (`viewBox="0 0 1e308 1e-308"`), which previously produced a
   one-cell blank icon or a confusing error from the rasterizer.

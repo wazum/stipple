@@ -197,20 +197,27 @@ final class Stipple
         // Cell display aspect is roughly 1:2 (width:height); doubling the
         // cell-width count derived from the SVG's aspect ratio keeps the icon
         // visually undistorted at the terminal.
-        $cellsWide = max(1, (int) round($this->heightCells * $cleaned->aspectRatio * 2));
+        $cellsWideExact = $this->heightCells * $cleaned->aspectRatio * 2;
 
-        $widthPx = $cellsWide * $sampler->pixelsPerCellX();
+        // Checked as floats: casting an out-of-range value to int is undefined, and max(1, …)
+        // would then launder the garbage into a plausible-looking one-cell icon.
+        $widthPxExact = $cellsWideExact * $sampler->pixelsPerCellX();
         $heightPx = $this->heightCells * $sampler->pixelsPerCellY();
 
-        if ($widthPx > $this->maxRasterDimension || $heightPx > $this->maxRasterDimension) {
+        if (!is_finite($widthPxExact)
+            || $widthPxExact > $this->maxRasterDimension
+            || $heightPx > $this->maxRasterDimension) {
             throw new InvalidArgumentException(sprintf(
-                'Computed raster dimensions %dx%d exceed maxRasterDimension (%d). '.
+                'Computed raster dimensions %sx%d exceed maxRasterDimension (%d). '.
                 'Reduce height(), pre-crop the SVG, or raise the cap via maxRasterDimension().',
-                $widthPx,
+                $this->describeWidth($widthPxExact),
                 $heightPx,
                 $this->maxRasterDimension,
             ));
         }
+
+        $cellsWide = max(1, (int) round($cellsWideExact));
+        $widthPx = $cellsWide * $sampler->pixelsPerCellX();
 
         $image = $rasterizer->rasterize($cleaned->svg, $widthPx, $heightPx);
         $sampled = $sampler->sample($image, $this->samplerOptions);
@@ -226,6 +233,19 @@ final class Stipple
     public function __toString(): string
     {
         return $this->toString();
+    }
+
+    /**
+     * Casting to int is only safe in range, and %f on an astronomical ratio would print hundreds
+     * of digits into the message.
+     */
+    private function describeWidth(float $widthPx): string
+    {
+        return match (true) {
+            !is_finite($widthPx) => 'infinite',
+            $widthPx > (float) \PHP_INT_MAX => sprintf('%.3E', $widthPx),
+            default => sprintf('%d', (int) $widthPx),
+        };
     }
 
     /**
