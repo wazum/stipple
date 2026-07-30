@@ -63,7 +63,7 @@ final class BrailleSampler extends AbstractSampler
                     $cellRow * self::PIXELS_PER_CELL_Y,
                     $widthPx,
                     $heightPx,
-                    $options->threshold,
+                    $options,
                 );
 
                 $cellsString .= mb_chr(self::BRAILLE_BLOCK_START + $bits, 'UTF-8');
@@ -84,12 +84,12 @@ final class BrailleSampler extends AbstractSampler
         int $cellOriginY,
         int $widthPx,
         int $heightPx,
-        float $threshold,
+        SamplerOptions $options,
     ): int {
         $bits = 0;
         for ($column = 0; $column < self::PIXELS_PER_CELL_X; $column++) {
             for ($row = 0; $row < self::PIXELS_PER_CELL_Y; $row++) {
-                if (!$this->pixelOn($image, $cellOriginX + $column, $cellOriginY + $row, $widthPx, $heightPx, $threshold)) {
+                if (!$this->pixelOn($image, $cellOriginX + $column, $cellOriginY + $row, $widthPx, $heightPx, $options)) {
                     continue;
                 }
                 $bits |= self::DOT_BITS[$column][$row];

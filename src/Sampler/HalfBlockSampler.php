@@ -47,8 +47,8 @@ final class HalfBlockSampler extends AbstractSampler
             $bottomRow = $topRow + 1;
 
             for ($column = 0; $column < $widthPx; $column++) {
-                $topOn = $this->pixelOn($image, $column, $topRow, $widthPx, $heightPx, $options->threshold);
-                $bottomOn = $this->pixelOn($image, $column, $bottomRow, $widthPx, $heightPx, $options->threshold);
+                $topOn = $this->pixelOn($image, $column, $topRow, $widthPx, $heightPx, $options);
+                $bottomOn = $this->pixelOn($image, $column, $bottomRow, $widthPx, $heightPx, $options);
 
                 $character = match (true) {
                     $topOn && $bottomOn => self::CHAR_FULL,

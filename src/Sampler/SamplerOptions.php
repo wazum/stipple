@@ -19,13 +19,14 @@ final readonly class SamplerOptions
 
     /**
      * @param ?string $foregroundHex 6-digit "#rrggbb", or null for the terminal default
-     * @param float   $threshold     alpha-weighted luminance cutoff in [0.0, 1.0]
+     * @param float   $threshold     cutoff in [0.0, 1.0], applied to whichever $inkMode measures
      *
      * @throws InvalidArgumentException
      */
     public function __construct(
         ?string $foregroundHex = null,
         public float $threshold = 0.5,
+        public InkMode $inkMode = InkMode::Coverage,
     ) {
         if ($foregroundHex !== null && preg_match(self::HEX_PATTERN, $foregroundHex) !== 1) {
             throw new InvalidArgumentException(sprintf(
@@ -46,5 +47,20 @@ final readonly class SamplerOptions
         }
 
         $this->foregroundHex = $foregroundHex === null ? null : strtolower($foregroundHex);
+    }
+
+    public function withForegroundHex(?string $foregroundHex): self
+    {
+        return new self($foregroundHex, $this->threshold, $this->inkMode);
+    }
+
+    public function withThreshold(float $threshold): self
+    {
+        return new self($this->foregroundHex, $threshold, $this->inkMode);
+    }
+
+    public function withInkMode(InkMode $inkMode): self
+    {
+        return new self($this->foregroundHex, $this->threshold, $inkMode);
     }
 }

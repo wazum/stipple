@@ -8,6 +8,7 @@ use Wazum\Stipple\Exception\InvalidArgumentException;
 use Wazum\Stipple\Rasterizer\PhpSvgRasterizer;
 use Wazum\Stipple\Rasterizer\RasterizerInterface;
 use Wazum\Stipple\Sampler\BrailleSampler;
+use Wazum\Stipple\Sampler\InkMode;
 use Wazum\Stipple\Sampler\SamplerInterface;
 use Wazum\Stipple\Sampler\SamplerOptions;
 
@@ -79,7 +80,7 @@ final class Stipple
     public function color(?string $hex): self
     {
         $clone = clone $this;
-        $clone->samplerOptions = new SamplerOptions($hex, $this->samplerOptions->threshold);
+        $clone->samplerOptions = $this->samplerOptions->withForegroundHex($hex);
 
         return $clone;
     }
@@ -99,13 +100,25 @@ final class Stipple
     public function threshold(float $luminance): self
     {
         $clone = clone $this;
-        $clone->samplerOptions = new SamplerOptions($this->samplerOptions->foregroundHex, $luminance);
+        $clone->samplerOptions = $this->samplerOptions->withThreshold($luminance);
 
         return $clone;
     }
 
     /**
-     * Replaces colour and threshold in one call; equivalent to color() plus threshold().
+     * Coverage (the default) inks any sufficiently opaque pixel whatever its colour;
+     * Luminance weights by brightness, for light-on-dark artwork.
+     */
+    public function inkMode(InkMode $mode): self
+    {
+        $clone = clone $this;
+        $clone->samplerOptions = $this->samplerOptions->withInkMode($mode);
+
+        return $clone;
+    }
+
+    /**
+     * Replaces every sampler setting at once; the individual withers are additive.
      */
     public function samplerOptions(SamplerOptions $options): self
     {

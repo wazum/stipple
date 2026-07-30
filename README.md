@@ -102,7 +102,7 @@ echo Stipple::make('/path/to/icon.svg')
     ->height(4)                // cells; valid 1..256
     ->color('#00ffff')         // optional, 6-digit hex; null → terminal default fg
     ->accent('#ff8700')        // overrides the fallback in any var(--icon-color-accent, …) call in the SVG
-    ->threshold(0.5)           // alpha-weighted luminance cutoff in [0.0, 1.0]
+    ->threshold(0.5)           // coverage cutoff in [0.0, 1.0]
     ->maxRasterDimension(2048) // safety cap on the intermediate raster (default 4096 px)
     ->toString();
 
@@ -154,6 +154,29 @@ for ($line = 0; $line < $lineCount; $line++) {
 
 `row()` pads with the icon's own `blankCell` — `U+2800` for Braille, not a space — so mixed heights
 and aspect ratios stay column-aligned.
+
+## Ink mode
+
+Monochrome output has one ink colour, so what matters is which pixels are *covered*, not what
+colour they are. That is the default:
+
+```php
+use Wazum\Stipple\Sampler\InkMode;
+
+Stipple::make($path)->toString();                          // InkMode::Coverage (default)
+Stipple::make($path)->inkMode(InkMode::Luminance)->toString();
+```
+
+| Mode | A pixel is ink when | Use for |
+| ---- | ------------------- | ------- |
+| `Coverage` (default) | it is opaque enough — any colour | single-colour icons, including black or unfilled ones (Material, Font Awesome, Heroicons, Bootstrap) |
+| `Luminance` | brightness × opacity clears the threshold | artwork that draws light shapes on a dark background, where colour carries the shape |
+
+`threshold()` applies to whichever quantity the mode measures. Under `Coverage` it is a coverage
+cutoff, so `threshold(0.0)` means "any visible pixel".
+
+> Under `Luminance`, a black-filled or unfilled icon renders as nothing at all — black has zero
+> brightness. That is why `Coverage` is the default.
 
 ## Samplers
 

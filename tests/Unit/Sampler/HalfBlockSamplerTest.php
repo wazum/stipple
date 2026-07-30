@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Exception\InvalidArgumentException;
 use Wazum\Stipple\Sampler\HalfBlockSampler;
+use Wazum\Stipple\Sampler\InkMode;
 use Wazum\Stipple\Sampler\SamplerOptions;
 
 final class HalfBlockSamplerTest extends TestCase
@@ -74,8 +75,44 @@ final class HalfBlockSamplerTest extends TestCase
         $sampler = new HalfBlockSampler();
 
         // Blue alone falls below 0.2; at 0.35 only green survives.
-        self::assertSame("\e[39m██ █\e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.2)));
-        self::assertSame("\e[39m █  \e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.35)));
+        self::assertSame("\e[39m██ █\e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.2, InkMode::Luminance)));
+        self::assertSame("\e[39m █  \e[0m\n", $sampler->sample($this->imageOf(4, 2, $pixels), new SamplerOptions(null, 0.35, InkMode::Luminance)));
+    }
+
+    /**
+     * The default mode inks on coverage, so colour is irrelevant — this is what makes a
+     * black-filled icon render instead of vanishing.
+     */
+    #[Test]
+    public function coverageModeInksAnyOpaquePixelWhateverItsColour(): void
+    {
+        $sampler = new HalfBlockSampler();
+
+        foreach ([[0, 0, 0], [95, 99, 104], [255, 0, 0], [255, 255, 255]] as $rgb) {
+            [$red, $green, $blue] = $rgb;
+            $image = $this->imageOf(1, 2, [
+                [0, 0, [$red, $green, $blue, self::OPAQUE]],
+                [0, 1, [$red, $green, $blue, self::OPAQUE]],
+            ]);
+
+            self::assertSame(
+                "\e[39m█\e[0m\n",
+                $sampler->sample($image, new SamplerOptions()),
+                sprintf('rgb(%d,%d,%d) should be ink in coverage mode.', $red, $green, $blue),
+            );
+        }
+    }
+
+    #[Test]
+    public function coverageModeStillHonoursAlpha(): void
+    {
+        $sampler = new HalfBlockSampler();
+        $image = $this->imageOf(1, 2, [
+            [0, 0, [0, 0, 0, self::TRANSPARENT]],
+            [0, 1, [0, 0, 0, self::TRANSPARENT]],
+        ]);
+
+        self::assertSame(" \n", $sampler->sample($image, new SamplerOptions()));
     }
 
     #[Test]
@@ -127,7 +164,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [0, 0, 0, self::OPAQUE]],
         ]);
 
-        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
+        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5, InkMode::Luminance)));
     }
 
     #[Test]
@@ -151,7 +188,7 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 1, [127, 127, 127, self::OPAQUE]],
         ]);
 
-        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5)));
+        self::assertSame(" \n", (new HalfBlockSampler())->sample($image, new SamplerOptions(null, 0.5, InkMode::Luminance)));
     }
 
     #[Test]
@@ -174,13 +211,13 @@ final class HalfBlockSamplerTest extends TestCase
             [0, 0, [255, 255, 255, self::OPAQUE]],
             [0, 1, [255, 255, 255, self::OPAQUE]],
         ]);
-        self::assertSame("\e[39m█\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0)));
+        self::assertSame("\e[39m█\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0, InkMode::Luminance)));
 
         $almostWhite = $this->imageOf(1, 2, [
             [0, 0, [254, 254, 254, self::OPAQUE]],
             [0, 1, [254, 254, 254, self::OPAQUE]],
         ]);
-        self::assertSame(" \n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0)));
+        self::assertSame(" \n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0, InkMode::Luminance)));
     }
 
     #[Test]

@@ -11,6 +11,11 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Added
 
+- `InkMode` enum plus `Stipple::inkMode()`, and `SamplerOptions::withForegroundHex()`,
+  `withThreshold()`, `withInkMode()`. The withers carry every other setting across, so an option
+  added in 1.x can never be silently dropped by `color()` or `threshold()`.
+- Golden tests recording how all 14 bundled example icons render, so pipeline changes surface as a
+  reviewable picture. Nothing previously rendered a real icon.
 - `Stipple::toIcon(): RenderedIcon` for laying icons out beside other output — the rows unjoined,
   plus `widthCells`, `heightCells`, `blankCell`, `row()` and `blankRow()`. `row()` pads out-of-range
   rows with the sampler's blank cell so mixed heights and aspect ratios stay column-aligned.
@@ -27,6 +32,14 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Changed
 
+- **Ink is now decided by coverage, not brightness.** A pixel is ink when it is opaque enough,
+  whatever colour it is. Previously the rule was brightness x opacity, so a black-filled or
+  unfilled icon — the most common convention in Material Icons, Material Symbols, Font Awesome
+  and Heroicons — rendered as entirely blank rows with no error, and no `threshold()` value could
+  recover it. `InkMode::Luminance` keeps the old rule for light-on-dark artwork; select it with
+  `Stipple::inkMode()`. Rendering of the bundled example icons is unchanged (golden-tested).
+- **`AbstractSampler::pixelOn()` takes `SamplerOptions`** instead of a bare `float $threshold`,
+  so the ink rule and any later option reach it. Affects samplers extending `AbstractSampler`.
 - **`SamplerInterface::sample()` now takes a `SamplerOptions` object** instead of positional
   `?string $foregroundHex, float $threshold`. Options can then be added without breaking the
   interface again. `SamplerOptions` validates the colour and threshold on construction, so an

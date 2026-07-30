@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\Stipple\Sampler\BrailleSampler;
+use Wazum\Stipple\Sampler\InkMode;
 use Wazum\Stipple\Sampler\SamplerOptions;
 
 final class BrailleSamplerTest extends TestCase
@@ -102,7 +103,7 @@ final class BrailleSamplerTest extends TestCase
         $image = $this->fillTransparent(2, 4);
         $this->setPixel($image, 0, 0, [0, 0, 0, self::OPAQUE]);
 
-        self::assertSame("\u{2800}\n", (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5)));
+        self::assertSame("\u{2800}\n", (new BrailleSampler())->sample($image, new SamplerOptions(null, 0.5, InkMode::Luminance)));
     }
 
     #[Test]
@@ -111,7 +112,7 @@ final class BrailleSamplerTest extends TestCase
         $sampler = new BrailleSampler();
 
         $whiteImage = $this->fillOpaqueWhite(2, 4);
-        self::assertSame("\e[39m\u{28FF}\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0)));
+        self::assertSame("\e[39m\u{28FF}\e[0m\n", $sampler->sample($whiteImage, new SamplerOptions(null, 1.0, InkMode::Luminance)));
 
         $almostWhite = $this->fillTransparent(2, 4);
         for ($x = 0; $x < 2; $x++) {
@@ -119,7 +120,7 @@ final class BrailleSamplerTest extends TestCase
                 $this->setPixel($almostWhite, $x, $y, [254, 254, 254, self::OPAQUE]);
             }
         }
-        self::assertSame("\u{2800}\n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0)));
+        self::assertSame("\u{2800}\n", $sampler->sample($almostWhite, new SamplerOptions(null, 1.0, InkMode::Luminance)));
     }
 
     #[Test]

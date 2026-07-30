@@ -30,9 +30,9 @@ abstract class AbstractSampler implements SamplerInterface
     }
 
     /**
-     * Alpha-weighted Rec. 601 luminance, gated by $threshold. Both samplers use the
-     * same rule: a pixel is "on" only if the visible luminance (luma × opacity)
-     * is strictly positive AND meets the threshold.
+     * Whether a pixel counts as ink, per the configured InkMode and threshold. A pixel is
+     * never ink unless its weight is strictly positive, so a threshold of 0.0 still means
+     * "any visible coverage" rather than "everything".
      */
     final protected function pixelOn(
         \GdImage $image,
@@ -40,7 +40,7 @@ abstract class AbstractSampler implements SamplerInterface
         int $y,
         int $widthPx,
         int $heightPx,
-        float $threshold,
+        SamplerOptions $options,
     ): bool {
         if ($x >= $widthPx || $y >= $heightPx) {
             return false;
@@ -52,15 +52,18 @@ abstract class AbstractSampler implements SamplerInterface
         }
 
         // Hand-unpacking 0xAARRGGBB avoids an imagecolorsforindex() array per pixel.
-        $luminance = (
-            0.299 * (($rgba >> 16) & 0xFF)
-            + 0.587 * (($rgba >> 8) & 0xFF)
-            + 0.114 * ($rgba & 0xFF)
-        ) / 255.0;
         $opacity = 1.0 - ((($rgba >> 24) & 0x7F) / 127.0);
-        $weight = $luminance * $opacity;
 
-        return $weight > 0.0 && $weight >= $threshold;
+        $weight = match ($options->inkMode) {
+            InkMode::Coverage => $opacity,
+            InkMode::Luminance => $opacity * (
+                0.299 * (($rgba >> 16) & 0xFF)
+                + 0.587 * (($rgba >> 8) & 0xFF)
+                + 0.114 * ($rgba & 0xFF)
+            ) / 255.0,
+        };
+
+        return $weight > 0.0 && $weight >= $options->threshold;
     }
 
     final protected function buildForegroundSgr(?string $foregroundHex): string
