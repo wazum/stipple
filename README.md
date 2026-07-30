@@ -165,7 +165,10 @@ The preprocessor hardens SVG input before rasterization:
 - DOCTYPE / ENTITY declarations are rejected pre-parse (XXE attack surface).
 - `<script>`, `<foreignObject>`, and **all `<image>`** elements are rejected after parse — embedded raster is out of scope, and allowing `<image href="file://..."/>` would let the rasterizer dependency `file_get_contents()` arbitrary local files.
 - libxml is invoked with `LIBXML_NONET` (no network).
+- `Stipple::make()` accepts local filesystem paths only. Stream wrappers (`http://`, `data://`, `php://`, …) are refused, so a caller-supplied "path" cannot turn into an outbound request via the default `allow_url_fopen`. Fetch remote SVG yourself and hand it to `makeFromString()`.
 - `currentColor` is substituted with a configurable foreground hex; `var(--icon-color-accent, ...)` is resolved DOM-side so the rasterizer never has to deal with CSS custom properties.
+
+Input that cannot be handled always surfaces as a `Wazum\Stipple\Exception\StippleException`, so `catch (StippleException)` is sufficient — no raw `ValueError`/`ErrorException` leaks through.
 
 ## Supported SVG features
 
@@ -173,10 +176,17 @@ The preprocessor handles common patterns found in icon SVGs from any source:
 
 - `fill="currentColor"` and `stroke="currentColor"` — substituted with `#ffffff` so the rasterizer always renders at full luminance, regardless of the terminal foreground colour.
 - `style="fill: currentColor; …"` — same substitution inside inline CSS, with other declarations preserved.
+- `<style>.icon { fill: currentColor }</style>` — same substitution inside a stylesheet element. Selectors are left alone and only flat declaration blocks are rewritten; declarations nested in an at-rule (`@media`) are passed through, which `meyfa/php-svg` would not resolve anyway.
 - `var(--icon-color-accent, <fallback-hex>)` — resolved DOM-side using either the configured `accent()` value or the embedded fallback hex (the rasterizer doesn't resolve CSS custom properties on its own).
-- `viewBox` (space- or comma-separated) and root `width`/`height` numeric attributes for aspect-ratio resolution.
+- `viewBox` (space- or comma-separated) for aspect-ratio resolution, or root `width`/`height`. Those may carry an absolute CSS unit (`16px`, `12pt`, `1in`, `2cm`, …) and are normalised to px, so a mismatched pair like `width="1in" height="72pt"` still resolves correctly. Relative units (`%`, `em`, `ex`) are rejected — they need a viewport this library doesn't have.
 
 Anything not in the above list is passed through to the rasterizer untouched.
+
+### Not supported
+
+- **Gradients render blank.** `fill="url(#someGradient)"` produces empty output — `meyfa/php-svg` does not resolve paint-server references, and stipple cannot detect it, so you get blank rows rather than an exception. Flatten gradient-filled icons to solid fills first.
+- **`<style>` type selectors** (`rect { fill: … }`) are not applied by the rasterizer; class selectors are.
+- **Embedded raster** (`<image>`) is rejected outright — see [Security](#security).
 
 ## Development
 
