@@ -9,8 +9,9 @@
 Render small SVG icons as monochrome ANSI in the terminal — pure PHP, zero system dependencies.
 
 Use it in any PHP command line tool that wants real icons next to its menu items. The result is a
-plain string, so `echo`, Symfony Console and Laravel Prompts all work. Two samplers are included:
-Braille for more detail, half-block for wider terminal support.
+plain string, so `echo`, [Symfony TUI](https://github.com/symfony/tui), Symfony Console and Laravel
+Prompts all work. Two samplers are included: Braille for more detail, half-block for wider terminal
+support.
 
 ## Preview
 
@@ -170,6 +171,12 @@ echo (string) Stipple::make('/path/to/icon.svg')->height(4);
 ```
 
 Every row ends with `\n`. You can `echo` the string or pass it to Laravel Prompts' `note()`.
+
+For [Symfony TUI](https://github.com/symfony/tui) put the rows in a `TextWidget`. Its layout counts
+visible columns and ignores colour codes, so the rows keep their width. Note that Symfony TUI needs
+PHP 8.4 and is still marked experimental; stipple itself stays on PHP 8.2. If your terminal supports
+the Kitty graphics protocol, Symfony TUI can also show the SVG as a real image with its
+`ImageWidget` — stipple is for the terminals that cannot do that.
 
 ## Icons side by side
 

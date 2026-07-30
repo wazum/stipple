@@ -1,6 +1,6 @@
 {
     "name": "wazum/stipple",
-    "description": "Render small SVG icons to monochrome ANSI for terminal UIs (Laravel/Prompts, Symfony Console, plain CLI).",
+    "description": "Render small SVG icons to monochrome ANSI for terminal UIs \u2014 Symfony TUI, Laravel Prompts, Symfony Console or plain CLI.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -12,7 +12,8 @@
         "icons",
         "braille",
         "half-block",
-        "render"
+        "render",
+        "symfony"
     ],
     "homepage": "https://github.com/wazum/stipple",
     "support": {
