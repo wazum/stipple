@@ -11,6 +11,9 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Added
 
+- A `stipple` command, installed as `vendor/bin/stipple`, so an icon can be checked in a terminal
+  before writing any code: `vendor/bin/stipple icon.svg --height=4 --sampler=half-block`. Reads
+  stdin with `-`, writes failures to stderr and exits non-zero.
 - `InkMode` enum plus `Stipple::inkMode()`, and `SamplerOptions::withForegroundHex()`,
   `withThreshold()`, `withInkMode()`. The withers carry every other setting across, so an option
   added in 1.x can never be silently dropped by `color()` or `threshold()`.
@@ -116,6 +119,9 @@ First stable release. The public API is now covered by semantic versioning; see
 
 - Added Packagist, PHP version, CI, PHPStan and license badges.
 - Documented the supported public API surface.
+- A "Will my icons work?" table answers the first question a reader has, and `GALLERY.md` plus the
+  README icon wall are generated from the renderer itself by `php bin/generate-gallery.php`, so the
+  pictures in the docs cannot drift from what the library does.
 
 ### Internal
 

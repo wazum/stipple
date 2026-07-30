@@ -80,6 +80,43 @@ Same icon at `height(8)` rendered with the half-block sampler — coarser, but w
     ▀▀█   ██▀
 ```
 
+Every bundled example icon, rendered by stipple itself — regenerate with `php bin/generate-gallery.php`,
+and see [GALLERY.md](GALLERY.md) for all heights and both samplers:
+
+<!-- gallery:start -->
+
+```
+⠀⢀⣠⣤⣤⣤⣀⠀  ⢀⣀⡀⠀⠀⠀⠀⠀  ⠀⠀⠀⠀⠀⠀⠀⠀  ⠀⠀⠀⠀⢀⡀⠀⠀  ⠀⠀⠀⣤⢤⡄⠀⠀  ⠀⠀⢠⡤⠤⣤⠀⠀  ⢠⣤⠤⠤⠤⠤⢤⣤
+⢠⣿⡏⠋⠙⠋⣿⣧  ⠀⠘⣯⠉⠉⠉⢩⡏  ⠀⢀⡴⠒⢦⠤⣄⠀  ⢀⣤⡶⠀⣾⠱⢦⣄  ⠰⣟⣙⡥⠤⣝⣉⡷  ⠀⢹⡏⣭⢩⡍⣿⠁  ⠀⠙⢧⡀⠀⣠⠟⠁
+⠸⣿⣇⠀⠀⢀⣿⣿  ⠀⠀⣿⣒⣒⣒⣛⠀  ⢰⣏⠁⠀⠀⠀⠛⣦  ⠘⠷⣦⢰⡏⢠⡴⠟  ⢠⣟⠸⣧⣠⡿⠘⣧  ⠀⢸⡇⣿⢸⡇⣿⠀  ⠀⠀⢸⡇⠀⣿⠀⠀
+⠀⠙⠿⡅⠀⣿⠟⠁  ⠀⠀⠻⠟⠀⠻⠟⠀  ⠀⠉⠉⠉⠉⠉⠉⠁  ⠀⠀⠈⠾⠁⠈⠀⠀  ⠀⠛⠛⣶⣰⡞⠛⠃  ⠀⠸⣇⣛⣘⣃⡿⠀  ⠀⠀⠈⠛⢶⣿⠀⠀
+brand-gi    cart     cloud      code      cog      delete    filter 
+
+⠀⣀⣀⣀⢀⣀⣀⡀  ⠀⠀⠀⢀⣀⠀⠀⠀  ⠀⠀⢀⡤⠤⣄⠀⠀  ⠀⢀⣤⠤⣤⣄⠀⠀  ⠀⠀⠀⠀⣀⠀⠀⠀  ⠀⠀⢀⣤⣤⣄⠀⠀  ⣶⣶⣶⣶⣶⣶⣶⣶
+⢸⡇⠀⠈⠟⠀⠀⣿  ⠀⠀⠀⣈⣉⠀⠀⠀  ⠀⣀⣿⣀⣀⣸⣇⡀  ⢰⡟⠁⠀⠀⢹⣷⠀  ⠀⣀⣀⣼⣿⣇⣀⡀  ⠀⠀⢸⣿⣿⡿⠀⠀  ⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠻⣆⠀⠀⣀⡾⠃  ⠀⠀⠀⢹⣿⠀⠀⠀  ⠀⣿⠀⣶⣶⡆⢸⡇  ⠘⢷⡀⠀⠀⣸⣏⠀  ⠀⠈⢻⣿⣿⣿⡋⠀  ⠀⠀⢀⣿⣿⣇⠀⠀  ⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠀⠈⠻⠶⠋⠀⠀  ⠀⠀⠰⠾⠿⠶⠀⠀  ⠀⣿⣀⣘⣛⣀⣸⡇  ⠀⠈⠙⠛⠋⠙⢿⣷  ⠀⠀⠞⠋⠉⠛⠷⠀  ⢰⣿⣿⣿⣿⣿⣿⣷  ⣿⣿⣿⣿⣿⣿⣿⣿
+ heart      info      lock     search     star      user      page  
+```
+
+<!-- gallery:end -->
+
+## Will my icons work?
+
+| Source | Works? |
+| ------ | ------ |
+| Material Icons, Material Symbols, Font Awesome, Heroicons, Bootstrap Icons, Feather, TYPO3.Icons | **Yes** — including black or unfilled icons, which is the default for most of them |
+| Minified icons from a CDN (packed arc flags) | **Yes** — path data is normalised first |
+| Sprite sheets (`<use>` + `<symbol>`) | **Yes** — references are inlined |
+| Figma / Illustrator exports (wrapper `clip-path`, `<switch>`) | **Yes** — the no-op clip is dropped, `<switch>` unwrapped |
+| Gradient- or pattern-filled icons | **Yes**, flattened to one ink colour — monochrome cannot show a gradient |
+| Artwork needing real clipping or a `mask` | **No** — refused with an explanation, never rendered wrongly |
+| Icons containing `<text>` | **No** — refused; convert text to paths |
+| Multi-colour illustrations | Not the target. One ink colour; try `--ink=luminance` for light-on-dark art |
+
+The rule throughout: if stipple cannot render something faithfully it raises a
+`StippleException` rather than quietly emitting a blank or wrong picture.
+
 ## Install
 
 ```bash
@@ -88,9 +125,25 @@ composer require wazum/stipple
 
 Requires PHP 8.2+ with `ext-gd`, `ext-mbstring`, `ext-dom`, `ext-libxml`, `ext-simplexml`. No system binaries needed — rasterization is handled in pure PHP via [`meyfa/php-svg`](https://github.com/meyfa/php-svg).
 
+## Try it on your own icon
+
+Installing brings a `stipple` command, so you can see one of your icons in your own terminal before
+writing any code:
+
+```bash
+vendor/bin/stipple path/to/icon.svg
+vendor/bin/stipple path/to/icon.svg --height=4 --sampler=half-block
+vendor/bin/stipple path/to/logo.svg --color=#00ffff --ink=luminance
+cat icon.svg | vendor/bin/stipple -
+```
+
+`vendor/bin/stipple --help` lists every option. It exits non-zero and writes to stderr on failure,
+so it composes in a shell pipeline.
+
 ## Usage
 
 ```php
+use Wazum\Stipple\Sampler\InkMode;
 use Wazum\Stipple\Stipple;
 
 // One-shot, defaults: height 8 cells, terminal default fg, Braille sampler.
@@ -102,7 +155,8 @@ echo Stipple::make('/path/to/icon.svg')
     ->height(4)                // cells; valid 1..256
     ->color('#00ffff')         // optional, 6-digit hex; null → terminal default fg
     ->accent('#ff8700')        // overrides the fallback in any var(--icon-color-accent, …) call in the SVG
-    ->threshold(0.5)           // coverage cutoff in [0.0, 1.0]
+    ->threshold(0.5)           // cutoff in [0.0, 1.0] for whatever the ink mode measures
+    ->inkMode(InkMode::Coverage) // Coverage (default) or Luminance — see below
     ->maxRasterDimension(2048) // safety cap on the intermediate raster (default 4096 px)
     ->toString();
 
@@ -231,8 +285,9 @@ pixel-threshold and SGR helpers:
 public function sample(\GdImage $image, SamplerOptions $options): string
 ```
 
-`SamplerOptions` carries the colour and threshold and validates both on construction, so a sampler
-never has to check them. `color()`/`threshold()` build it for you, or pass one directly:
+`SamplerOptions` carries the colour, threshold and ink mode, validating each on construction, so a
+sampler never has to check them. `color()`/`threshold()`/`inkMode()` build it for you, or pass one
+directly:
 
 ```php
 use Wazum\Stipple\Sampler\SamplerOptions;
@@ -243,10 +298,11 @@ Stipple::make($path)->samplerOptions(new SamplerOptions('#00ffff', 0.4))->toStri
 ## Public API
 
 Covered by semantic versioning: `Stipple`, `RenderedIcon`, `SamplerInterface`, `SamplerOptions`,
-`BrailleSampler`, `HalfBlockSampler`, `AbstractSampler`, `RasterizerInterface`, `PhpSvgRasterizer`
-and the `Exception\*` hierarchy.
+`InkMode`, `BrailleSampler`, `HalfBlockSampler`, `AbstractSampler`, `RasterizerInterface`,
+`PhpSvgRasterizer` and the `Exception\*` hierarchy. The `stipple` command's behaviour is covered too.
 
-`SvgPreprocessor` and `PreprocessedSvg` are marked `@internal` and may change in any release.
+`SvgPreprocessor`, `PreprocessedSvg` and `Console\StippleCommand` are marked `@internal` and may
+change in any release.
 
 ## Security
 
@@ -272,16 +328,12 @@ Input that cannot be handled always surfaces as a `Wazum\Stipple\Exception\Stipp
 
 The preprocessor handles common patterns found in icon SVGs from any source:
 
-- `fill="currentColor"` and `stroke="currentColor"` — substituted with `#ffffff` so the rasterizer always renders at full luminance, regardless of the terminal foreground colour.
+- `fill="currentColor"` and `stroke="currentColor"` — substituted with `#ffffff`, since the terminal foreground is applied at output time rather than by the rasterizer.
 - `style="fill: currentColor; …"` — same substitution inside inline CSS, with other declarations preserved.
 - `<style>.icon { fill: currentColor }</style>` — same substitution inside a stylesheet element. Selectors are left alone and only flat declaration blocks are rewritten; declarations nested in an at-rule (`@media`) are passed through, which `meyfa/php-svg` would not resolve anyway.
 - `var(--icon-color-accent, <fallback-hex>)` — resolved DOM-side using either the configured `accent()` value or the embedded fallback hex (the rasterizer doesn't resolve CSS custom properties on its own).
 - `viewBox` (space- or comma-separated) for aspect-ratio resolution, or root `width`/`height`. Those may carry an absolute CSS unit (`16px`, `12pt`, `1in`, `2cm`, …) and are normalised to px, so a mismatched pair like `width="1in" height="72pt"` still resolves correctly. Relative units (`%`, `em`, `ex`) are rejected — they need a viewport this library doesn't have.
-
-Anything not in the above list is passed through to the rasterizer untouched.
-
 - `fill="url(#gradient)"` / `fill="url(#pattern)"` — paint-server references are flattened to solid foreground, since a gradient carries no information in monochrome and `meyfa/php-svg` would otherwise render nothing at all. An SVG 2 fallback paint after the reference wins, so `fill="url(#g) #ff8700"` uses the accent and `fill="url(#g) none"` stays invisible.
-
 - `<use href="#id">` / `<use xlink:href="#id">` — inlined, including references to `<symbol>` and
   nested `<use>`, with `x`/`y` applied as a translate. This is how sprite-sheet icon sets are
   distributed. External references (`sprite.svg#id`) are refused rather than fetched.
@@ -292,6 +344,8 @@ Anything not in the above list is passed through to the rasterizer untouched.
   of the path, so icons from minified sets rendered as fragments.
 - `clip-path` covering the whole viewBox — dropped, since it changes nothing. Figma and Illustrator
   wrap exports in exactly this.
+
+Anything not in the above list is passed through to the rasterizer untouched.
 
 ### Not supported
 

@@ -5,7 +5,10 @@
 /.ddev              export-ignore
 /.idea              export-ignore
 /.claude            export-ignore
-/bin                export-ignore
+# bin/stipple is the shipped CLI; the rest of bin/ is development tooling.
+/bin/demo.php       export-ignore
+/bin/icon-row.php   export-ignore
+/bin/generate-gallery.php export-ignore
 /examples           export-ignore
 /tests              export-ignore
 /.gitattributes     export-ignore

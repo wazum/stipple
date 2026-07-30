@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Wazum\Stipple\Console\StippleCommand;
+use Wazum\Stipple\Exception\StippleException;
+
+// Works both from a checkout and from a consumer's vendor/bin.
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+if (!class_exists(StippleCommand::class)) {
+    fwrite(STDERR, 'stipple: could not locate the Composer autoloader.'.PHP_EOL);
+    exit(1);
+}
+
+$arguments = array_slice($argv, 1);
+$command = new StippleCommand();
+
+if ($arguments === [] || array_intersect($arguments, ['-h', '--help']) !== []) {
+    fwrite(STDOUT, $command->usage());
+    exit($arguments === [] ? 1 : 0);
+}
+
+try {
+    fwrite(STDOUT, $command->render($arguments, in_array('-', $arguments, true) ? stream_get_contents(STDIN) : null));
+} catch (StippleException $exception) {
+    fwrite(STDERR, 'stipple: '.$exception->getMessage().PHP_EOL);
+    exit(1);
+}

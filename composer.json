@@ -40,6 +40,9 @@
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^11"
     },
+    "bin": [
+        "bin/stipple"
+    ],
     "autoload": {
         "psr-4": {
             "Wazum\\Stipple\\": "src/"
