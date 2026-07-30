@@ -132,6 +132,13 @@ final class SvgPreprocessor
         if ($document->getElementsByTagName('image')->length > 0) {
             throw new InvalidSvgException('SVG contains an <image> element; embedded raster is not supported.');
         }
+
+        // No font is registered with the rasterizer, so text would silently render as nothing.
+        if ($document->getElementsByTagName('text')->length > 0) {
+            throw new InvalidSvgException(
+                'SVG contains a <text> element, which cannot be rendered; convert the text to paths.',
+            );
+        }
     }
 
     private function applyColorSubstitutions(\DOMDocument $document, ?string $accent): void

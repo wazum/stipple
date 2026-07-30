@@ -91,6 +91,25 @@ final class ClipAndMaskTest extends TestCase
     }
 
     #[Test]
+    public function textIsRefused(): void
+    {
+        // No font is registered with the rasterizer, so text renders as nothing at all.
+        $this->expectException(InvalidSvgException::class);
+        $this->render(self::OPEN.'<text x="2" y="12" font-size="10">A</text></svg>');
+    }
+
+    #[Test]
+    public function titleAndDescAreNotMistakenForText(): void
+    {
+        $plain = self::OPEN.'<rect x="2" y="2" width="12" height="12" fill="currentColor"/></svg>';
+        $described = self::OPEN
+            .'<title>An icon</title><desc>Longer description</desc>'
+            .'<rect x="2" y="2" width="12" height="12" fill="currentColor"/></svg>';
+
+        self::assertSame($this->render($plain), $this->render($described));
+    }
+
+    #[Test]
     public function clipPathNoneIsLeftAlone(): void
     {
         $plain = self::OPEN.'<rect x="2" y="2" width="12" height="12" fill="currentColor"/></svg>';

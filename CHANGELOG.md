@@ -60,6 +60,19 @@ First stable release. The public API is now covered by semantic versioning; see
 
 ### Fixed
 
+- `<use>` / `<symbol>` references are inlined, and `<switch>` is replaced by its first viable child.
+  The rasterizer treats both as no-ops, so sprite-sheet icon sets and Illustrator's SVG 1.1 export
+  rendered as nothing at all. External `<use>` references are refused rather than fetched;
+  dangling and circular ones raise `InvalidSvgException` instead of rendering blank.
+- Path data is normalised before rasterization. The rasterizer tokenises it with a bare number
+  regex, so separator-less arc flags (`a8 8 0 11-16 0`, what every SVG minifier emits) and uppercase
+  exponents were misread — and on an argument-count mismatch it silently discarded the rest of the
+  path. Minified icons rendered as fragments.
+- `clip-path` and `mask` no longer render incorrectly. Both were ignored, so clipped content was
+  drawn in full and a load-bearing clip turned its icon into a filled block. A clip covering the
+  whole viewBox is dropped (what Figma and Illustrator wrap exports in); anything that would change
+  the picture, and any `mask`, is refused.
+- `<text>` is refused rather than rendering as nothing, since no font is registered.
 - Rasterizer diagnostics no longer reach the caller. `meyfa/php-svg` emits `E_DEPRECATED` for the
   fractional coordinates ordinary icons produce at most heights, and the error handler was
   restored before rasterization ran — so with `display_errors` on, PHP diagnostic text was printed
