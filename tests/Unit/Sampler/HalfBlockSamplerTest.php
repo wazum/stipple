@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Tests\Unit\Sampler;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Wazum\Stipple\Exception\InvalidArgumentException;
 use Wazum\Stipple\Sampler\HalfBlockSampler;
 
 final class HalfBlockSamplerTest extends TestCase
@@ -53,6 +55,32 @@ final class HalfBlockSamplerTest extends TestCase
         ]);
 
         self::assertSame("\e[38;2;0;255;255m█\e[0m\n", (new HalfBlockSampler())->sample($image, '#00ffff', 0.5));
+    }
+
+    #[Test]
+    #[DataProvider('malformedForegroundHexProvider')]
+    public function malformedForegroundHexIsRejected(string $hex): void
+    {
+        $image = $this->imageOf(1, 2, [
+            [0, 0, [255, 255, 255, self::OPAQUE]],
+            [0, 1, [255, 255, 255, self::OPAQUE]],
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        (new HalfBlockSampler())->sample($image, $hex, 0.5);
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function malformedForegroundHexProvider(): iterable
+    {
+        yield 'not hex at all' => ['nonsense'];
+        yield 'missing hash' => ['00ffff'];
+        yield 'short form' => ['#fff'];
+        yield 'named colour' => ['red'];
+        yield 'empty string' => [''];
+        yield 'trailing garbage' => ['#00ffffzz'];
     }
 
     #[Test]

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Wazum\Stipple\Sampler;
 
+use Wazum\Stipple\Exception\InvalidArgumentException;
+
 abstract class AbstractSampler implements SamplerInterface
 {
     protected const RESET_SGR = "\e[0m";
     protected const DEFAULT_FG_SGR = "\e[39m";
+    private const HEX_PATTERN = '/^#[0-9a-fA-F]{6}$/';
 
     abstract public function pixelsPerCellX(): int;
 
@@ -45,10 +48,23 @@ abstract class AbstractSampler implements SamplerInterface
         return $weight > 0.0 && $weight >= $threshold;
     }
 
+    /**
+     * Re-validated rather than trusting the facade, because samplers are a public extension
+     * point: hexdec() on a malformed value emits deprecations and yields a wrong colour.
+     *
+     * @throws InvalidArgumentException when $foregroundHex is not a 6-digit hex colour
+     */
     final protected function buildForegroundSgr(?string $foregroundHex): string
     {
         if ($foregroundHex === null) {
             return self::DEFAULT_FG_SGR;
+        }
+
+        if (preg_match(self::HEX_PATTERN, $foregroundHex) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                'Foreground must be a 6-digit hex like "#aabbcc"; got %s.',
+                $foregroundHex,
+            ));
         }
 
         $red = (int) hexdec(substr($foregroundHex, 1, 2));
