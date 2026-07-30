@@ -16,3 +16,4 @@
 /phpstan.neon       export-ignore
 /phpunit.xml        export-ignore
 /php-cs-fixer.config.php export-ignore
+/GALLERY.md         export-ignore
