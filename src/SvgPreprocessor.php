@@ -16,6 +16,19 @@ final class SvgPreprocessor
     private const PAINT_SERVER_PATTERN = '/\Gurl\([^)]*\)\s*/i';
 
     /**
+     * Arguments per path command, per the SVG path grammar.
+     *
+     * @var array<string, int>
+     */
+    private const PATH_ARGUMENT_COUNTS = [
+        'M' => 2, 'L' => 2, 'T' => 2,
+        'H' => 1, 'V' => 1,
+        'C' => 6, 'S' => 4, 'Q' => 4,
+        'A' => 7,
+        'Z' => 0,
+    ];
+
+    /**
      * Absolute CSS lengths in px (1in = 96px). Normalising to a common base keeps a
      * mismatched pair like width="1in" height="72pt" correct.
      *
@@ -62,6 +75,7 @@ final class SvgPreprocessor
 
             $this->rejectDisallowedElements($document);
             $this->applyColorSubstitutions($document, $accent);
+            $this->normalisePathData($document);
 
             $aspectRatio = $this->resolveAspectRatio($root);
 
@@ -145,6 +159,164 @@ final class SvgPreprocessor
             if ($rewritten !== $original) {
                 $styleElement->textContent = $rewritten;
             }
+        }
+    }
+
+    /**
+     * Rewrites every path's data with explicit separators. The rasterizer tokenises path data
+     * with a bare number regex, so it misreads the separator-less arc flags every SVG minifier
+     * emits — and on an argument-count mismatch it silently drops the rest of the path.
+     */
+    private function normalisePathData(\DOMDocument $document): void
+    {
+        foreach ($document->getElementsByTagName('path') as $path) {
+            if (!$path->hasAttribute('d')) {
+                continue;
+            }
+            $original = $path->getAttribute('d');
+            $normalised = $this->normalisePath($original);
+            if ($normalised !== $original) {
+                $path->setAttribute('d', $normalised);
+            }
+        }
+    }
+
+    /**
+     * Returns $d unchanged if anything cannot be read with certainty, so an unfamiliar
+     * construct is passed through rather than corrupted.
+     */
+    private function normalisePath(string $d): string
+    {
+        $tokens = [];
+        $offset = 0;
+        $length = strlen($d);
+
+        while (true) {
+            $this->skipPathSeparators($d, $offset);
+            if ($offset >= $length) {
+                break;
+            }
+
+            $command = $d[$offset];
+            $argumentCount = self::PATH_ARGUMENT_COUNTS[strtoupper($command)] ?? null;
+            if ($argumentCount === null) {
+                return $d;
+            }
+            $offset++;
+            $tokens[] = $command;
+
+            if ($argumentCount === 0) {
+                continue;
+            }
+
+            $isArc = 'A' === strtoupper($command);
+            $sets = 0;
+            while (true) {
+                $resume = $offset;
+                $arguments = $this->readArgumentSet($d, $offset, $argumentCount, $isArc);
+                if ($arguments === null) {
+                    $offset = $resume;
+                    break;
+                }
+                $tokens[] = implode(' ', $arguments);
+                $sets++;
+            }
+
+            if ($sets === 0) {
+                return $d;
+            }
+        }
+
+        return implode(' ', $tokens);
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    private function readArgumentSet(string $d, int &$offset, int $argumentCount, bool $isArc): ?array
+    {
+        $arguments = [];
+        for ($index = 0; $index < $argumentCount; $index++) {
+            $this->skipPathSeparators($d, $offset);
+
+            // An arc's large-arc and sweep flags are single digits the spec allows to be written
+            // with no separator, which is exactly what the rasterizer's tokeniser cannot see.
+            $argument = $isArc && ($index === 3 || $index === 4)
+                ? $this->readPathFlag($d, $offset)
+                : $this->readPathNumber($d, $offset);
+
+            if ($argument === null) {
+                return null;
+            }
+            $arguments[] = $argument;
+        }
+
+        return $arguments;
+    }
+
+    private function readPathFlag(string $d, int &$offset): ?string
+    {
+        if ($offset < strlen($d) && ('0' === $d[$offset] || '1' === $d[$offset])) {
+            return $d[$offset++];
+        }
+
+        return null;
+    }
+
+    private function readPathNumber(string $d, int &$offset): ?string
+    {
+        $start = $offset;
+        $length = strlen($d);
+
+        if ($offset < $length && ('+' === $d[$offset] || '-' === $d[$offset])) {
+            $offset++;
+        }
+
+        $digits = 0;
+        while ($offset < $length && ctype_digit($d[$offset])) {
+            $offset++;
+            $digits++;
+        }
+        if ($offset < $length && '.' === $d[$offset]) {
+            $offset++;
+            while ($offset < $length && ctype_digit($d[$offset])) {
+                $offset++;
+                $digits++;
+            }
+        }
+        if ($digits === 0) {
+            $offset = $start;
+
+            return null;
+        }
+
+        if ($offset < $length && ('e' === $d[$offset] || 'E' === $d[$offset])) {
+            $beforeExponent = $offset;
+            $offset++;
+            if ($offset < $length && ('+' === $d[$offset] || '-' === $d[$offset])) {
+                $offset++;
+            }
+            $exponentDigits = 0;
+            while ($offset < $length && ctype_digit($d[$offset])) {
+                $offset++;
+                $exponentDigits++;
+            }
+            if ($exponentDigits === 0) {
+                $offset = $beforeExponent;
+            }
+        }
+
+        // Lowercased so an uppercase exponent, which the rasterizer's tokeniser also misreads,
+        // becomes readable.
+        return strtolower(substr($d, $start, $offset - $start));
+    }
+
+    private function skipPathSeparators(string $d, int &$offset): void
+    {
+        $length = strlen($d);
+        while ($offset < $length && (',' === $d[$offset] || ' ' === $d[$offset]
+            || "\n" === $d[$offset] || "\r" === $d[$offset] || "\t" === $d[$offset])) {
+            $offset++;
         }
     }
 
