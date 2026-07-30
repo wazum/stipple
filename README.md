@@ -86,7 +86,7 @@ Same icon at `height(8)` rendered with the half-block sampler — coarser, but w
 composer require wazum/stipple
 ```
 
-Requires PHP 8.2+ with `ext-gd`, `ext-mbstring`, `ext-dom`, `ext-simplexml`. No system binaries needed — rasterization is handled in pure PHP via [`meyfa/php-svg`](https://github.com/meyfa/php-svg).
+Requires PHP 8.2+ with `ext-gd`, `ext-mbstring`, `ext-dom`, `ext-libxml`, `ext-simplexml`. No system binaries needed — rasterization is handled in pure PHP via [`meyfa/php-svg`](https://github.com/meyfa/php-svg).
 
 ## Usage
 
@@ -254,7 +254,15 @@ The preprocessor hardens SVG input before rasterization:
 
 - DOCTYPE / ENTITY declarations are rejected pre-parse (XXE attack surface).
 - `<script>`, `<foreignObject>`, and **all `<image>`** elements are rejected after parse — embedded raster is out of scope, and allowing `<image href="file://..."/>` would let the rasterizer dependency `file_get_contents()` arbitrary local files.
-- libxml is invoked with `LIBXML_NONET` (no network).
+- libxml is invoked with `LIBXML_NONET` (no network). The DOCTYPE check runs both before parsing
+  (a raw-byte scan) and after, because the pre-scan cannot see a declaration in an encoding libxml
+  auto-detects such as UTF-16.
+- Path coordinates far outside the viewBox are refused. Curve and arc approximation cost scales
+  with coordinate magnitude, so a tiny document could otherwise exhaust memory.
+- Input files over 4 MiB are refused before being read, and control characters in a path never
+  reach an exception message — a filename is attacker-controlled when a CLI walks an untrusted
+  directory, and these messages get printed to a terminal.
+- The host's libxml error queue is never cleared unless this library enabled collection itself.
 - `Stipple::make()` accepts local filesystem paths only. Stream wrappers (`http://`, `data://`, `php://`, …) are refused, so a caller-supplied "path" cannot turn into an outbound request via the default `allow_url_fopen`. Fetch remote SVG yourself and hand it to `makeFromString()`.
 - `currentColor` is substituted with a configurable foreground hex; `var(--icon-color-accent, ...)` is resolved DOM-side so the rasterizer never has to deal with CSS custom properties.
 

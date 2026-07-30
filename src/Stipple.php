@@ -15,6 +15,9 @@ use Wazum\Stipple\Sampler\SamplerOptions;
 final class Stipple
 {
     public const DEFAULT_MAX_RASTER_DIMENSION = 4096;
+
+    /** Generous for an icon; guards against reading an arbitrarily large file into memory. */
+    private const MAX_INPUT_BYTES = 4 * 1024 * 1024;
     private const HEX_PATTERN = '/^#[0-9a-fA-F]{6}$/';
 
     /** @var int<1, 256> */
@@ -49,12 +52,30 @@ final class Stipple
     public static function make(string $path): self
     {
         if (!is_file($path)) {
-            throw new InvalidArgumentException(sprintf('Not a readable local file: %s', $path));
+            throw new InvalidArgumentException(sprintf('Not a readable local file: %s', self::describePath($path)));
         }
 
-        $svg = @file_get_contents($path);
+        // Reading first and asking later would let a huge file exhaust memory before any check.
+        $size = @filesize($path);
+        if ($size !== false && $size > self::MAX_INPUT_BYTES) {
+            throw new InvalidArgumentException(sprintf(
+                'SVG at %s is %d bytes, over the %d byte limit for an icon.',
+                self::describePath($path),
+                $size,
+                self::MAX_INPUT_BYTES,
+            ));
+        }
+
+        $svg = @file_get_contents($path, false, null, 0, self::MAX_INPUT_BYTES + 1);
         if ($svg === false) {
-            throw new InvalidArgumentException(sprintf('Cannot read SVG from path: %s', $path));
+            throw new InvalidArgumentException(sprintf('Cannot read SVG from path: %s', self::describePath($path)));
+        }
+        if (strlen($svg) > self::MAX_INPUT_BYTES) {
+            throw new InvalidArgumentException(sprintf(
+                'SVG at %s exceeds the %d byte limit for an icon.',
+                self::describePath($path),
+                self::MAX_INPUT_BYTES,
+            ));
         }
 
         return new self($svg);
@@ -205,5 +226,16 @@ final class Stipple
     public function __toString(): string
     {
         return $this->toString();
+    }
+
+    /**
+     * Filenames are attacker-controlled when a CLI enumerates an untrusted directory, and these
+     * messages get printed to a terminal, so control sequences must not survive into them.
+     */
+    private static function describePath(string $path): string
+    {
+        $escaped = preg_replace('/[\x00-\x1F\x7F]/', '?', $path);
+
+        return $escaped ?? '(unprintable path)';
     }
 }

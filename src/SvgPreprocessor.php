@@ -16,6 +16,7 @@ final class SvgPreprocessor
     private const PAINT_SERVER_PATTERN = '/\Gurl\([^)]*\)\s*/i';
 
     private const MAX_USE_DEPTH = 8;
+    private const MAX_COORDINATE_FACTOR = 1000.0;
 
     /**
      * Arguments per path command, per the SVG path grammar.
@@ -58,6 +59,9 @@ final class SvgPreprocessor
         // function still returns bool), so installing one would silently clobber a
         // resolver the host app may have set.
         $previousErrorState = libxml_use_internal_errors(true);
+        // A host that collects libxml errors itself shares this queue, so ours start after
+        // whatever is already in it and clearing is only ever safe if we enabled collection.
+        $preexistingErrors = count(libxml_get_errors());
 
         try {
             $document = new \DOMDocument();
@@ -65,10 +69,17 @@ final class SvgPreprocessor
             if ($loaded === false) {
                 throw new InvalidSvgException(sprintf(
                     'Failed to parse SVG: %s',
-                    $this->firstLibxmlError() ?? 'unknown libxml error',
+                    $this->firstOwnLibxmlError($preexistingErrors) ?? 'unknown libxml error',
                 ));
             }
-            libxml_clear_errors();
+
+            // The authoritative DOCTYPE check: the raw-byte pre-scan cannot see a declaration in
+            // an encoding libxml auto-detects, such as UTF-16.
+            if ($document->doctype !== null) {
+                throw new InvalidSvgException(
+                    'SVG contains a DOCTYPE declaration; refusing to parse (XXE attack surface).',
+                );
+            }
 
             $root = $document->documentElement;
             if ($root === null || $root->localName !== 'svg') {
@@ -81,7 +92,7 @@ final class SvgPreprocessor
             $this->resolveUseReferences($document);
             $this->resolveClipsAndMasks($document);
             $this->applyColorSubstitutions($document, $accent);
-            $this->normalisePathData($document);
+            $this->normalisePathData($document, $this->rootViewBoxRect($document));
 
             $aspectRatio = $this->resolveAspectRatio($root);
 
@@ -92,6 +103,9 @@ final class SvgPreprocessor
 
             return new PreprocessedSvg($serialized, $aspectRatio);
         } finally {
+            if ($previousErrorState === false) {
+                libxml_clear_errors();
+            }
             libxml_use_internal_errors($previousErrorState);
         }
     }
@@ -442,17 +456,41 @@ final class SvgPreprocessor
      * Rewrites every path's data with explicit separators. The rasterizer tokenises path data
      * with a bare number regex, so it misreads the separator-less arc flags every SVG minifier
      * emits — and on an argument-count mismatch it silently drops the rest of the path.
+     *
+     * @param array{float, float, float, float}|null $viewBox
      */
-    private function normalisePathData(\DOMDocument $document): void
+    private function normalisePathData(\DOMDocument $document, ?array $viewBox): void
     {
+        // Curve and arc approximation cost scales with coordinate magnitude, so a coordinate far
+        // outside the viewBox exhausts memory with an uncatchable fatal from a tiny document.
+        $extent = $viewBox === null ? null : max(abs($viewBox[2]), abs($viewBox[3])) * self::MAX_COORDINATE_FACTOR;
+
         foreach ($document->getElementsByTagName('path') as $path) {
             if (!$path->hasAttribute('d')) {
                 continue;
             }
             $original = $path->getAttribute('d');
+            $this->rejectRunawayCoordinates($original, $extent);
             $normalised = $this->normalisePath($original);
             if ($normalised !== $original) {
                 $path->setAttribute('d', $normalised);
+            }
+        }
+    }
+
+    private function rejectRunawayCoordinates(string $d, ?float $extent): void
+    {
+        if ($extent === null || $extent <= 0.0) {
+            return;
+        }
+
+        preg_match_all('/-?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/', $d, $matches);
+        foreach ($matches[0] as $number) {
+            if (abs((float) $number) > $extent) {
+                throw new InvalidSvgException(sprintf(
+                    'SVG path coordinate %s is far outside the viewBox; refusing to rasterize it.',
+                    $number,
+                ));
             }
         }
     }
@@ -783,14 +821,13 @@ final class SvgPreprocessor
         return $value;
     }
 
-    private function firstLibxmlError(): ?string
+    private function firstOwnLibxmlError(int $skip): ?string
     {
         $errors = libxml_get_errors();
-        libxml_clear_errors();
-        if ($errors === []) {
+        if (count($errors) <= $skip) {
             return null;
         }
 
-        return trim($errors[0]->message);
+        return trim($errors[$skip]->message);
     }
 }

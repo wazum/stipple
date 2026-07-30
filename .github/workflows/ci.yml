@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege stated in code rather than relying on a repository setting that can be
+# flipped in the UI without any reviewable diff.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test (PHP ${{ matrix.php }})

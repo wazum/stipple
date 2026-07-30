@@ -58,6 +58,21 @@ First stable release. The public API is now covered by semantic versioning; see
 - `friendsofphp/php-cs-fixer` now requires `^3.75`; the previous `^3.50` floor could not parse
   this project's own fixer configuration.
 
+### Security
+
+- The DOCTYPE check now also runs after parsing. The raw-byte pre-scan cannot see a declaration in
+  an encoding libxml auto-detects, so UTF-16 input carried one straight through. No XXE or SSRF was
+  reachable through the gap — `LIBXML_NONET` and PHP's defaults held — but the pre-scan was
+  presented as the primary defence and was not one.
+- Path coordinates far outside the viewBox are refused. Curve and arc approximation cost scales with
+  coordinate magnitude, so a 138-byte document could exhaust memory with an uncatchable fatal.
+- Input files are capped at 4 MiB, checked before reading rather than after.
+- Control characters are stripped from paths interpolated into exception messages, so a filename
+  cannot smuggle terminal escape sequences into output printed to a TTY.
+- The host's libxml error queue is no longer cleared unless this library enabled collection itself,
+  and a parse failure reports this library's own error rather than whatever the host had queued.
+- `ext-libxml` is declared, and CI declares `permissions: contents: read`.
+
 ### Fixed
 
 - `<use>` / `<symbol>` references are inlined, and `<switch>` is replaced by its first viable child.

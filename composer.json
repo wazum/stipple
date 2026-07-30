@@ -30,6 +30,7 @@
         "php": "^8.2",
         "ext-dom": "*",
         "ext-gd": "*",
+        "ext-libxml": "*",
         "ext-mbstring": "*",
         "ext-simplexml": "*",
         "meyfa/php-svg": "^0.16"
