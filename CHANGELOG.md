@@ -14,8 +14,9 @@ First stable release. The public API is now covered by semantic versioning; see
 - `InkMode` enum plus `Stipple::inkMode()`, and `SamplerOptions::withForegroundHex()`,
   `withThreshold()`, `withInkMode()`. The withers carry every other setting across, so an option
   added in 1.x can never be silently dropped by `color()` or `threshold()`.
-- Golden tests recording how all 14 bundled example icons render, so pipeline changes surface as a
-  reviewable picture. Nothing previously rendered a real icon.
+- Tests covering all 14 bundled example icons, which nothing previously did. `ExampleIconsRenderTest`
+  asserts geometry and ink on any GD build; the `golden` suite additionally pins byte-exact output,
+  and because that depends on the GD build it records which one produced it and skips elsewhere.
 - `Stipple::toIcon(): RenderedIcon` for laying icons out beside other output — the rows unjoined,
   plus `widthCells`, `heightCells`, `blankCell`, `row()` and `blankRow()`. `row()` pads out-of-range
   rows with the sampler's blank cell so mixed heights and aspect ratios stay column-aligned.

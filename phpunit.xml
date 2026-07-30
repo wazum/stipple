@@ -10,6 +10,11 @@
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>
+            <!-- Byte-exact rendering is specific to the GD build that recorded it. -->
+            <exclude>tests/Golden</exclude>
+        </testsuite>
+        <testsuite name="golden">
+            <directory>tests/Golden</directory>
         </testsuite>
     </testsuites>
     <source>

@@ -314,7 +314,14 @@ These render, but not as a browser would:
 composer install
 composer run qa          # php-cs-fixer (check) + phpstan + phpunit
 composer run qa:fix      # apply php-cs-fixer
+composer run golden      # compare every example icon against its recorded rendering
 ```
+
+`composer run golden` is a separate suite because byte-exact rasterisation depends on the GD build
+— different libgd versions place shape edges a pixel apart. The recording notes which GD produced
+it and skips elsewhere, so re-record with `STIPPLE_UPDATE_GOLDEN=1 composer run golden` on your own
+machine and review the diff; the pictures are stored as text. `ExampleIconsRenderTest` carries the
+build-independent assertions and runs in CI.
 
 Individually: `composer run test`, `composer run stan`, `composer run php-cs-fixer`. Levels and
 paths live in `phpstan.neon` and `php-cs-fixer.config.php` rather than in the invocation.

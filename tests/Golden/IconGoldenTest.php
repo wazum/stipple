@@ -17,12 +17,41 @@ use Wazum\Stipple\Stipple;
  * pipeline shows up as a reviewable picture rather than a number. ESC is written as a
  * literal "\e" to keep the files diffable while staying byte-exact.
  *
- * Re-record intentional changes with: STIPPLE_UPDATE_GOLDEN=1 vendor/bin/phpunit
+ * Byte-exact rasterisation is not reproducible across GD builds — different libgd versions
+ * place shape edges a pixel apart — so the recording notes which GD produced it and the
+ * comparison is skipped elsewhere. ExampleIconsRenderTest carries the portable assertions.
+ *
+ * Re-record intentional changes with: STIPPLE_UPDATE_GOLDEN=1 vendor/bin/phpunit --testsuite golden
  */
 final class IconGoldenTest extends TestCase
 {
     private const ICON_DIR = __DIR__.'/../../examples/icons';
     private const GOLDEN_DIR = __DIR__.'/expected';
+    private const FINGERPRINT_FILE = __DIR__.'/expected/.gd-version';
+
+    protected function setUp(): void
+    {
+        if (getenv('STIPPLE_UPDATE_GOLDEN') === '1') {
+            file_put_contents(self::FINGERPRINT_FILE, self::gdVersion()."\n");
+
+            return;
+        }
+
+        if (!is_file(self::FINGERPRINT_FILE)) {
+            return;
+        }
+
+        $recorded = trim((string) file_get_contents(self::FINGERPRINT_FILE));
+        if ($recorded !== self::gdVersion()) {
+            self::markTestSkipped(sprintf(
+                'Golden output was recorded with GD %s; this environment has GD %s, which places '
+                .'shape edges a pixel differently. Re-record with STIPPLE_UPDATE_GOLDEN=1 to '
+                .'compare rendering here.',
+                $recorded,
+                self::gdVersion(),
+            ));
+        }
+    }
 
     #[Test]
     #[DataProvider('iconProvider')]
@@ -58,6 +87,14 @@ final class IconGoldenTest extends TestCase
             $name = basename($file, '.svg');
             yield $name => [$name];
         }
+    }
+
+    private static function gdVersion(): string
+    {
+        $info = gd_info();
+        $version = $info['GD Version'] ?? 'unknown';
+
+        return is_string($version) ? $version : 'unknown';
     }
 
     private function renderReport(string $name): string
