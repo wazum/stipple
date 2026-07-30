@@ -6,11 +6,13 @@
          cacheDirectory=".phpunit.cache"
          displayDetailsOnTestsThatTriggerWarnings="true"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="true"
+         defaultTestSuite="default">
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>
-            <!-- Byte-exact rendering is specific to the GD build that recorded it. -->
+            <!-- Byte-exact rendering varies between GD builds that report the same version,
+                 so it is reviewed locally via the golden suite, never in CI. -->
             <exclude>tests/Golden</exclude>
         </testsuite>
         <testsuite name="golden">

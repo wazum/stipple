@@ -266,7 +266,7 @@ final class SvgPreprocessor
         if ($referenced === null) {
             throw new InvalidSvgException(sprintf('SVG <use> references "%s", which does not exist.', $href));
         }
-        if ($referenced === $use || $referenced->contains($use)) {
+        if ($referenced === $use || $this->isAncestorOf($referenced, $use)) {
             throw new InvalidSvgException('SVG <use> references an element that contains it.');
         }
 
@@ -309,6 +309,20 @@ final class SvgPreprocessor
         }
 
         $use->parentNode?->replaceChild($group, $use);
+    }
+
+    /**
+     * Walked by hand because DOMNode::contains() only exists from PHP 8.3 and the floor is 8.2.
+     */
+    private function isAncestorOf(\DOMNode $ancestor, \DOMNode $node): bool
+    {
+        for ($current = $node->parentNode; $current !== null; $current = $current->parentNode) {
+            if ($current === $ancestor) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function findById(\DOMDocument $document, string $id): ?\DOMElement

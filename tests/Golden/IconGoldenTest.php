@@ -17,9 +17,10 @@ use Wazum\Stipple\Stipple;
  * pipeline shows up as a reviewable picture rather than a number. ESC is written as a
  * literal "\e" to keep the files diffable while staying byte-exact.
  *
- * Byte-exact rasterisation is not reproducible across GD builds — different libgd versions
- * place shape edges a pixel apart — so the recording notes which GD produced it and the
- * comparison is skipped elsewhere. ExampleIconsRenderTest carries the portable assertions.
+ * Byte-exact rasterisation is not reproducible across environments: GD builds reporting the same
+ * version still place shape edges a pixel apart. So this suite is excluded from the default run
+ * and never executes in CI — ExampleIconsRenderTest carries the build-independent assertions. The
+ * recorded GD version is kept as a hint for a mismatch, not as a guarantee.
  *
  * Re-record intentional changes with: STIPPLE_UPDATE_GOLDEN=1 vendor/bin/phpunit --testsuite golden
  */
