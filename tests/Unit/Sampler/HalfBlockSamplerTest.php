@@ -256,7 +256,9 @@ final class HalfBlockSamplerTest extends TestCase
     }
 
     /**
-     * @param list<array{int, int, array{int, int, int, int}}> $pixels list of [x, y, [r, g, b, gdAlpha(0..127)]]
+     * @param positive-int $width
+     * @param positive-int $height
+     * @param list<array{int, int, array{int<0, 255>, int<0, 255>, int<0, 255>, int<0, 127>}}> $pixels list of [x, y, [r, g, b, gdAlpha(0..127)]]
      */
     private function imageOf(int $width, int $height, array $pixels): \GdImage
     {

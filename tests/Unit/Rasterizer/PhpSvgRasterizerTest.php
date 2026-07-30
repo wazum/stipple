@@ -35,7 +35,9 @@ final class PhpSvgRasterizerTest extends TestCase
         $totalPixels = 0;
         for ($y = 0; $y < 8; $y++) {
             for ($x = 0; $x < 8; $x++) {
-                $rgba = imagecolorsforindex($image, imagecolorat($image, $x, $y));
+                $colorIndex = imagecolorat($image, $x, $y);
+                self::assertNotFalse($colorIndex);
+                $rgba = imagecolorsforindex($image, $colorIndex);
                 $totalPixels++;
                 if ($rgba['red'] >= 240 && $rgba['green'] >= 240 && $rgba['blue'] >= 240 && $rgba['alpha'] === 0) {
                     $opaqueWhitePixels++;
@@ -55,7 +57,9 @@ final class PhpSvgRasterizerTest extends TestCase
 
         for ($y = 0; $y < 4; $y++) {
             for ($x = 0; $x < 4; $x++) {
-                $rgba = imagecolorsforindex($image, imagecolorat($image, $x, $y));
+                $colorIndex = imagecolorat($image, $x, $y);
+                self::assertNotFalse($colorIndex);
+                $rgba = imagecolorsforindex($image, $colorIndex);
                 self::assertSame(127, $rgba['alpha'], "Pixel ($x, $y) is not fully transparent");
             }
         }

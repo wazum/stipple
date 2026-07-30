@@ -216,7 +216,7 @@ final class SvgPreprocessorTest extends TestCase
         yield 'mm' => ['<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="20mm"/>', 2.0];
         yield 'uppercase unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="64PX" height="32PX"/>', 2.0];
         yield 'decimal with unit' => ['<svg xmlns="http://www.w3.org/2000/svg" width="16.5px" height="8.25px"/>', 2.0];
-        yield 'mixed in and pt' =>['<svg xmlns="http://www.w3.org/2000/svg" width="1in" height="72pt"/>', 1.0];
+        yield 'mixed in and pt' => ['<svg xmlns="http://www.w3.org/2000/svg" width="1in" height="72pt"/>', 1.0];
     }
 
     #[Test]

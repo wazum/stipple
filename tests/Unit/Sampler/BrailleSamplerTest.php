@@ -159,6 +159,10 @@ final class BrailleSamplerTest extends TestCase
         self::assertSame("\e[39m\u{2801}\e[0m\n", (new BrailleSampler())->sample($image, null, 0.5));
     }
 
+    /**
+     * @param positive-int $width
+     * @param positive-int $height
+     */
     private function fillTransparent(int $width, int $height): \GdImage
     {
         $image = imagecreatetruecolor($width, $height);
@@ -174,6 +178,10 @@ final class BrailleSamplerTest extends TestCase
         return $image;
     }
 
+    /**
+     * @param positive-int $width
+     * @param positive-int $height
+     */
     private function fillOpaqueWhite(int $width, int $height): \GdImage
     {
         $image = $this->fillTransparent($width, $height);
@@ -187,7 +195,7 @@ final class BrailleSamplerTest extends TestCase
     }
 
     /**
-     * @param array{int, int, int, int} $rgba
+     * @param array{int<0, 255>, int<0, 255>, int<0, 255>, int<0, 127>} $rgba
      */
     private function setPixel(\GdImage $image, int $x, int $y, array $rgba): void
     {

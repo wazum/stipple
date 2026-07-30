@@ -2,4 +2,7 @@ parameters:
     level: 8
     paths:
         - src
-    excludePaths: []
+        - tests
+    # meyfa/php-svg still declares legacy resource returns, so the runtime GdImage guards
+    # in PhpSvgRasterizer are deliberate even though the PHPDoc says they cannot fail.
+    treatPhpDocTypesAsCertain: false
