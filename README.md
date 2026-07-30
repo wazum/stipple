@@ -192,9 +192,12 @@ Anything not in the above list is passed through to the rasterizer untouched.
 
 ```bash
 composer install
-vendor/bin/phpunit
-vendor/bin/phpstan analyse src --level=8
+composer run qa          # php-cs-fixer (check) + phpstan + phpunit
+composer run qa:fix      # apply php-cs-fixer
 ```
+
+Individually: `composer run test`, `composer run stan`, `composer run php-cs-fixer`. Levels and
+paths live in `phpstan.neon` and `php-cs-fixer.config.php` rather than in the invocation.
 
 ## License
 

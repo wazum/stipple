@@ -127,7 +127,7 @@ final class StippleTest extends TestCase
     {
         $svg = Stipple::makeFromString(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4">'
-            .'<rect x="0" y="0" width="4" height="4" fill="currentColor"/></svg>'
+            .'<rect x="0" y="0" width="4" height="4" fill="currentColor"/></svg>',
         )->height(2)->sampler(new HalfBlockSampler());
 
         self::assertSame((string) $svg, $svg->toString());
@@ -139,7 +139,7 @@ final class StippleTest extends TestCase
         // viewBox 10000x1 with height(8) = 8 px-tall, aspectRatio 10000 → cellsWide 160000.
         // That's well past the default cap (4096 px wide).
         $instance = Stipple::makeFromString(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10000 1"/>'
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10000 1"/>',
         )->height(8);
 
         $this->expectException(InvalidArgumentException::class);
@@ -152,7 +152,7 @@ final class StippleTest extends TestCase
         // 4x4 viewBox at height(8) with default Braille = 16x32 px → would normally pass.
         // Cap at 8 px: the height (32 px) blows past it.
         $instance = Stipple::makeFromString(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"/>'
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"/>',
         )->height(8)->maxRasterDimension(8);
 
         $this->expectException(InvalidArgumentException::class);
