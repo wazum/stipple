@@ -82,6 +82,25 @@ final class StippleTest extends TestCase
     }
 
     #[Test]
+    public function iconStyledByStyleElementRendersInsteadOfBlank(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4">'
+            .'<style>.a { fill: currentColor }</style>'
+            .'<rect class="a" x="0" y="0" width="4" height="4"/></svg>';
+
+        $output = Stipple::makeFromString($svg)
+            ->height(2)
+            ->sampler(new HalfBlockSampler())
+            ->toString();
+
+        self::assertSame(
+            "\e[38;2;0;255;255m████\e[0m\n\e[38;2;0;255;255m████\e[0m\n",
+            Stipple::makeFromString($svg)->height(2)->color('#00ffff')->sampler(new HalfBlockSampler())->toString(),
+        );
+        self::assertSame("\e[39m████\e[0m\n\e[39m████\e[0m\n", $output);
+    }
+
+    #[Test]
     public function renderShortcutMatchesFluentToString(): void
     {
         self::assertSame(

@@ -110,6 +110,30 @@ final class SvgPreprocessor
                 }
             }
         }
+
+        foreach ($document->getElementsByTagName('style') as $styleElement) {
+            $original = $styleElement->textContent;
+            $rewritten = $this->rewriteStyleSheet($original, $accent);
+            if ($rewritten !== $original) {
+                $styleElement->textContent = $rewritten;
+            }
+        }
+    }
+
+    /**
+     * Selectors and nested at-rules pass through; only declaration blocks are rewritten.
+     */
+    private function rewriteStyleSheet(string $css, ?string $accent): string
+    {
+        $withAccent = $this->rewriteAccentVar($css, $accent);
+
+        $result = preg_replace_callback(
+            '/\{([^{}]*)\}/',
+            fn (array $matches): string => '{'.$this->rewriteCurrentColorInStyle($matches[1]).'}',
+            $withAccent,
+        );
+
+        return $result ?? $withAccent;
     }
 
     private function rewriteCurrentColorInStyle(string $style): string

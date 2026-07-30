@@ -306,6 +306,65 @@ final class SvgPreprocessorTest extends TestCase
         self::assertStringContainsString('0.5', $result->svg);
     }
 
+    // ---------- currentColor (<style> element) ----------
+
+    #[Test]
+    public function styleElementFillCurrentColorIsRewritten(): void
+    {
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<style>.icon { fill: currentColor; }</style>'
+            .'<rect class="icon" width="16" height="16"/></svg>',
+            null,
+        );
+
+        self::assertStringNotContainsStringIgnoringCase('currentColor', $result->svg);
+        self::assertStringContainsString('#ffffff', $result->svg);
+    }
+
+    #[Test]
+    public function styleElementStrokeCurrentColorIsRewritten(): void
+    {
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<style>.line { stroke: currentColor; stroke-width: 2; }</style>'
+            .'<path class="line" d="M0 0L16 16"/></svg>',
+            null,
+        );
+
+        self::assertStringNotContainsStringIgnoringCase('currentColor', $result->svg);
+        self::assertStringContainsString('stroke-width', $result->svg);
+    }
+
+    #[Test]
+    public function styleElementAccentVarIsRewritten(): void
+    {
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<style>.accent { fill: var(--icon-color-accent, #ff8700); }</style>'
+            .'<rect class="accent" width="16" height="16"/></svg>',
+            '#aabbcc',
+        );
+
+        self::assertStringContainsString('#aabbcc', $result->svg);
+        self::assertStringNotContainsString('var(', $result->svg);
+    }
+
+    #[Test]
+    public function styleElementSelectorsAndOtherDeclarationsArePreserved(): void
+    {
+        $result = $this->preprocessor->clean(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+            .'<style>.a, .b { fill: currentColor; opacity: 0.5 }</style>'
+            .'<rect class="a" width="16" height="16"/></svg>',
+            null,
+        );
+
+        self::assertStringContainsString('.a, .b', $result->svg);
+        self::assertStringContainsString('opacity: 0.5', $result->svg);
+        self::assertStringContainsString('fill: #ffffff', $result->svg);
+    }
+
     // ---------- accent var() ----------
 
     #[Test]
